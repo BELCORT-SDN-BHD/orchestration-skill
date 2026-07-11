@@ -31,7 +31,8 @@ For a private repo, use existing GitHub credentials:
 ```bash
 python3 ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py \
   --repo BELCORT-SDN-BHD/orchestration-skill \
-  --path skills/orchestration
+  --path skills/orchestration \
+  --method git
 bash ~/.codex/skills/orchestration/scripts/install-global.sh --backup-existing
 ```
 
