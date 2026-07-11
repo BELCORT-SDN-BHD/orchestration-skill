@@ -38,6 +38,15 @@ bash ~/.codex/skills/orchestration/scripts/install-global.sh --backup-existing
 
 This copies the skill into Codex and then links Claude Code to the same copy. The clone-and-link installation is preferable when you want simple updates across machines.
 
+## Local verification
+
+```bash
+python3 tests/validate_skill.py
+bash tests/smoke.sh
+```
+
+The smoke suite covers clean installation, idempotent reruns, refusal to overwrite existing skills, and backup-preserving migration.
+
 ## What “initialize as orchestrator” means
 
 The invoking session becomes the unique control plane and immediately resolves project law, ground truth, state, decision tier, and advisor availability. Independent advisor sessions are then launched as needed.
