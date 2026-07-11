@@ -1,0 +1,4 @@
+interface:
+  display_name: "Big Brain Orchestrator"
+  short_description: "Initialize a recoverable multi-model control plane"
+  default_prompt: "Use $orchestration to initialize this session as the recoverable orchestrator with independent Fable Max and Sol Ultra advisors."
