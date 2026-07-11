@@ -1,73 +1,28 @@
 # Advisor protocol
 
-Read this before the first advisor call in each orchestration session.
+`scripts/advisor.sh` owns the mechanics — launch flags, sandboxing, liveness, provenance capture. Its stall and wall thresholds are constants at the top of the script (printed by its usage text); pass wall minutes as the fourth argument to extend a consult, and predeclare that in the state ledger. This file defines what you feed it and what counts as a valid outcome.
 
-## Evidence pack
+## Evidence pack (the prompt file)
 
-First-round advisor input contains only:
+Open every pack with: "You are a read-only advisor. Answer directly in one memo; do not invoke skills, spawn agents, or delegate." (The codex lane cannot unload installed skills — this line is the guard.)
 
-1. the user's exact decision and desired outcome;
-2. applicable user/repository law;
-3. raw current evidence with paths, SHA/PR/test facts, timestamps, and unknowns;
-4. real options and consequences;
-5. the requested output: independent answer, adversarial attack, hidden risks, confidence, and missing evidence.
+Then:
 
-Do not include the control-plane recommendation, another advisor answer, or a desired verdict. A second round may reveal the control-plane thesis only after the independent memo is complete. Put the decision and real options before implementation status, say explicitly that reversal is acceptable, and remove credentials, tokens, `.env` contents, private keys, secret-bearing logs, and hidden reasoning.
+1. The user's exact words for the decision and the desired outcome.
+2. Applicable user/repository law.
+3. Raw evidence: paths, SHAs, test/CI facts, timestamps, unknowns.
+4. Real options with consequences.
+5. The ask: independent recommendation, hidden risks, missing evidence, confidence.
 
-## Fable 5 Max
+Round one never contains your recommendation or another advisor's answer. A second round may reveal your thesis — label it round two. Never interpolate user content into shell commands; the prompt travels as a file.
 
-Use a new session. Default to a tool-less memo over the complete redacted evidence pack. A representative Claude Code launch is:
+## Outcomes
 
-```bash
-claude -p --model fable --effort max \
-  --output-format stream-json --verbose --disable-slash-commands \
-  --tools "" \
-  < "$PROMPT_FILE" > "$EVENTS_FILE" 2> "$ERR_FILE"
-```
+`advisor.sh` classifies every run as `complete`, `unavailable` (capacity/refusal/auth — terminal, do not retry), or `incomplete: <reason>` (no progress, wall, empty output, failed run).
 
-If the installed client cannot stream, use its structured JSON mode and monitor the durable transcript without reading hidden reasoning. If the advisor needs repository facts not safe to embed, use a separately fenced read-only evidence worker and add only redacted excerpts to a new evidence pack; do not grant the advisor repo-wide access. An automatic safety fallback to Opus ends Fable provenance for that answer.
+- `complete` → cite `memo.md`; record `provenance.json` in the state ledger.
+- Anything else → run the fallback advisor once and label its memo `fallback: <model>`; report the substitution in the next user update, and never present fallback output as the primary advisor's. If the fallback also fails, the decision goes to the user. Never shop for a third opinion.
 
-## Independent Sol Ultra
+## Provenance
 
-Use a new ephemeral session, ignore personal model defaults when supported, and enforce a read-only sandbox. Verify the exact local model slug before invocation. Run from an evidence-only directory, not an unredacted repository or home directory. A representative Codex launch is:
-
-```bash
-codex exec --ignore-user-config --ephemeral --sandbox read-only \
-  --model gpt-5.6-sol --config 'model_reasoning_effort="ultra"' \
-  --json --cd "$EVIDENCE_DIR" - \
-  < "$PROMPT_FILE" > "$EVENTS_FILE" 2> "$ERR_FILE"
-```
-
-The invoking control-plane session is never reused or resumed as this advisor. The evidence directory contains only the redacted packet and explicitly safe attachments. If the runtime does not expose that model/effort, record observed model/effort as `unknown`; do not silently substitute a smaller model for Tier 1.
-
-## Liveness
-
-- Capacity/refusal/auth error: terminal immediately.
-- No new structured event or transcript record for five continuous minutes: terminate gracefully and mark `incomplete: no progress`.
-- Default total wall: twenty minutes. Predeclare a longer budget in the state ledger before launch.
-- UI spinner, process existence, and CPU alone are not completion evidence.
-- Stop only the exact process/session created by this work; never kill unrelated user tasks.
-
-## Provenance record
-
-Record for every attempt:
-
-- advisor role and decision tier;
-- prompt/evidence SHA-256;
-- requested model and effort;
-- observed response model and applied effort, or `unknown`;
-- session/thread ID and durable response/transcript path;
-- start, last-progress, end timestamps;
-- fallback/refusal/capacity events;
-- final completion state and output SHA-256.
-
-Allowed labels:
-
-- `Fable 5 verified, complete`
-- `independent Sol Ultra verified, complete`
-- `fallback: <actual model>`
-- `advisor unavailable: <reason>`
-- `advisor incomplete: <reason>`
-- `advisor provenance unknown`
-
-Never let a model self-report its identity as proof. Do not make a paid/usage-metered advisor call without the authority required by the user/project.
+`provenance.json` records requested vs observed model/effort, session/thread id, prompt and output SHA-256, timestamps, and final status. The claude lane reads the observed model from the CLI's JSON result metadata; observed effort is not exposed there, so `observed_effort: unknown` is expected on that lane, not a provenance failure. The sol lane reads model and effort from the codex rollout file under the codex home — which is why `advisor.sh` never passes `--ephemeral`. A model's self-identification in its own prose is never proof. Do not make a paid advisor call without the authority the user/project requires.

@@ -1,4 +1,4 @@
 interface:
-  display_name: "Big Brain Orchestrator"
-  short_description: "Initialize a recoverable multi-model control plane"
-  default_prompt: "Use $orchestration to initialize this session as the recoverable orchestrator with independent Fable Max and Sol Ultra advisors."
+  display_name: "Orchestrator"
+  short_description: "Initialize this session as an orchestrator: one senior advisor lane, cheap workers"
+  default_prompt: "Use $orchestration to initialize this session as the orchestrator. Ask me which advisor lane to use per the skill's routing table, then route all judgment through it and all execution to the cheapest capable worker lane."
