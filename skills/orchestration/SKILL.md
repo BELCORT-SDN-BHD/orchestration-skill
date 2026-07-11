@@ -11,12 +11,13 @@ Treat explicit invocation as authorization to initialize the **session control p
 
 Run this sequence before delegating work.
 
-1. Read applicable `AGENTS.md`, `CLAUDE.md`, project laws, and any repo-local orchestration skill/state. A repo-local rule may tighten or specialize this global skill; never use the global skill to weaken it.
-2. Run `scripts/preflight.sh` when shell access exists. Treat its config output as availability evidence only, never as proof of the current session model.
+1. Read applicable `AGENTS.md`, `CLAUDE.md`, and project laws before this protocol, then read any uniquely named project orchestration overlay/state. A project rule may tighten or specialize this global skill; never use the global skill to weaken it.
+2. Run `scripts/preflight.sh` when shell access exists. Treat its config output as availability evidence only, never as proof of the current session model. If the installed global paths disagree, the declared protocol version/hash is incompatible with a required project overlay, or a same-name project skill shadows this one, stop judgment-level orchestration and report the exact paths.
 3. Rebuild ground truth from git, PR/CI, worktrees, processes, deployments, and authoritative project files. Old transcripts and status docs are evidence, not current truth.
-4. Declare the invoking session the **only recoverable control plane**. It owns state, routing, evidence, synthesis, recovery, and user reports. It must not count itself as an independent advisor.
+4. Inspect the state checkpoint for an existing control-plane claim before declaring this session the **only recoverable control plane**. If another claim is live or cannot be disproved, report a split-brain conflict and do not dispatch work until the user or project law resolves it. On an authorized takeover, record the superseded session, evidence, timestamp, and new claim epoch. The control plane owns state, routing, evidence, synthesis, recovery, and user reports; it must not count itself as an independent advisor.
 5. Identify the state checkpoint. Use the project-defined path when present. For a long program without one, propose a repo-local state file; until the user/repo authorizes that write, keep a temporary in-thread ledger.
 6. Report initialization in one compact block:
+   - resolved global skill path, protocol version, `SKILL.md` hash, source commit or `unknown`, and loaded project overlay paths;
    - control-plane session and actual model/effort, or `unknown`;
    - applicable authority and prohibited external actions;
    - verified repo/head/PR/worktree state;
@@ -45,9 +46,13 @@ Use for product identity, brand, irreversible architecture, governance, merge po
 
 Consult Fable Max and independent Sol Ultra from the **same raw evidence pack**, without showing either the control-plane recommendation or the other advisor answer. The control plane then presents agreement, disagreement, evidence gaps, and its recommendation. The user decides.
 
+If Fable is unavailable, the already-independent Sol memo may be presented as a labeled fallback, but it cannot occupy both advisor seats and the Tier 1 council is degraded. Do not launch a second Sol or claim full council completion; wait or return the explicit override decision to the user.
+
 ### Tier 2 — control plane + Fable Max
 
 Use for reversible but meaningful user behavior, domain/interface changes, feature scope, quality conclusions, architecture drafts, and execution ordering. Consult Fable Max. Add independent Sol Ultra when the evidence conflicts, the decision crosses several systems, the control plane/Fable disagree, or the user requests deep planning.
+
+Batch interdependent Tier 2 questions from the same phase into one evidence pack and consultation. Do not create a meeting per checkbox or let separate prompts produce mutually inconsistent local answers.
 
 If Fable is unavailable, independent Sol Ultra may advise with an explicit fallback label. It never becomes “Fable consensus.” Report the outcome in the next decision bundle unless the issue escalates to Tier 1.
 
@@ -64,6 +69,7 @@ Core rules:
 - Request Fable with `--model fable --effort max` in a fresh read-only session.
 - Request Sol with the runtime's verified GPT-5.6 Sol `ultra` setting in a fresh ephemeral read-only session.
 - Feed prompts through files/stdin. Never interpolate user content into shell commands.
+- Never include credentials, tokens, `.env` contents, private keys, or unredacted secret-bearing transcripts. Default to a tool-less advisor over a redacted evidence pack; if direct inspection is essential, use a separately fenced read-only worker and pass only safe excerpts to the advisor.
 - First-round prompts contain the user words, applicable law, raw evidence, genuine options, and unknowns. Hide the control-plane conclusion and all prior advisor answers.
 - Verify actual response model from metadata/transcript. Record requested and observed effort separately; if applied effort is not exposed, write `unknown`.
 - Automatic Opus fallback is not Fable. Opus may be an executor or cross-family reviewer, but not an unlabeled replacement advisor.
@@ -75,22 +81,23 @@ Core rules:
 
 Read `references/MODEL-ROUTING.md` when assigning a new task class or changing model/effort.
 
-Every work order states: user outcome, exact scope/fence, authoritative inputs, prohibited actions, model + effort, machine-verifiable acceptance, required tests, evidence format, branch/worktree, and time/turn budget.
+Every work order states: user outcome, exact scope/fence, authoritative inputs, prohibited actions, model + effort, machine-verifiable acceptance, required tests, evidence format, branch/worktree, and time/turn budget. It also forbids the worker from invoking this skill, claiming control-plane ownership, or spawning an unfenced orchestration hierarchy.
 
 Prefer cross-family review for important artifacts. The authoring session/model may explain its work but cannot be the only reviewer or merger.
 
 ## 6. Maintain recoverable state
 
-For persistent programs, use `references/STATE-TEMPLATE.md`. At every phase boundary record current time, objective, authority, verified SHA/PR/CI/deployment facts, dirty worktrees, advisor proofs, active workers, decisions, unknowns, and next step.
+For persistent programs, use `references/STATE-TEMPLATE.md`. At every phase boundary record current time, objective, authority, control-plane claim/epoch, verified SHA/PR/CI/deployment facts, dirty worktrees, advisor proofs, active workers, decisions, unknowns, and next step. A repo-local file alone cannot prove cross-machine exclusivity; use the project's approved shared state store or report cross-machine ownership as unknown.
 
-On recovery, revalidate every mutable fact. Downgrade anything unverifiable to `unknown`. Never revive an old workflow only because its transcript says it was running. Protect dirty worktrees and user files; do not reset, clean, prune, stash-drop, force-remove, or delete unowned work.
+On recovery, revalidate every mutable fact. Downgrade anything unverifiable to `unknown`. Never revive an old workflow only because its transcript says it was running. Protect dirty worktrees and user files; do not reset, clean, prune, stash-drop, force-remove, or delete unowned work. Before calling an unowned dirty worktree “archived,” record its absolute path, owner, branch, HEAD, porcelain, file list, and checksums; copy it to an approved durable rescue location and leave the original untouched.
 
 ## 7. Hard gates
 
 - This skill never broadens user or repository authorization.
 - Never push directly to a protected/default branch unless applicable rules explicitly permit it; prefer PRs.
-- Never self-merge. Merge only when applicable law explicitly delegates it, current-head CI is green, separation of duties holds, and all required reviews are resolved.
+- Never self-merge. Merge only when applicable law explicitly delegates it, the underlying judgment work is complete, current-head CI is green, separation of duties holds, and all required reviews are resolved. After merge, reverify the default-branch SHA, PR state, and whether any deployment was triggered.
 - Never auto-merge, auto-deploy, spend real money, rotate credentials, write external platforms, delete data/resources, or contact people without the required authority.
+- Never read or transmit secrets to an advisor. Never disable provider safeguards. Hooks may restrict tools or paths, but they do not prove model identity, lock server-side routing, or override safeguards.
 - High-consequence actions remain fail-closed when advisor/model availability degrades.
 
 ## 8. Report

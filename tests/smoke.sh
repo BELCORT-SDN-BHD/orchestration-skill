@@ -13,6 +13,12 @@ test "$(readlink "$empty_home/.claude/skills/orchestration")" = "$skill_dir"
 
 rerun_output=$(HOME="$empty_home" CODEX_HOME="$empty_home/.codex" "$installer")
 test "$(printf '%s\n' "$rerun_output" | grep -c '^ALREADY_LINKED=')" -eq 2
+test "$(printf '%s\n' "$rerun_output" | grep -c '^ORCHESTRATION_PROTOCOL_VERSION=1.0.0$')" -eq 1
+
+preflight_output=$(HOME="$empty_home" CODEX_HOME="$empty_home/.codex" "$skill_dir/scripts/preflight.sh")
+test "$(printf '%s\n' "$preflight_output" | grep -c '^GLOBAL_INSTALL_COHERENT=yes$')" -eq 1
+test "$(printf '%s\n' "$preflight_output" | grep -c '^ORCHESTRATION_PROTOCOL_VERSION=1.0.0$')" -eq 1
+test "$(printf '%s\n' "$preflight_output" | grep -c '^ORCHESTRATION_SKILL_SHA256=[0-9a-f]\{64\}$')" -eq 1
 
 refuse_home="$test_root/refuse"
 mkdir -p "$refuse_home/.codex/skills/orchestration" "$refuse_home/.claude/skills/orchestration"

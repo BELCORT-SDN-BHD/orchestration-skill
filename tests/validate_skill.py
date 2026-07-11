@@ -30,6 +30,10 @@ if "/orchestration" not in frontmatter["description"]:
 if "TODO" in text:
     raise SystemExit("skill contains unresolved TODO")
 
+version = (skill / "VERSION").read_text(encoding="utf-8").strip()
+if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", version):
+    raise SystemExit("VERSION must be semantic x.y.z")
+
 for relative in sorted(set(re.findall(r"(?:references|scripts)/[A-Za-z0-9._-]+", text))):
     if not (skill / relative).is_file():
         raise SystemExit(f"missing referenced resource: {relative}")

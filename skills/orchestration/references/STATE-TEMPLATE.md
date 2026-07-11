@@ -8,7 +8,12 @@
 
 ## Control plane
 - Session/thread:
+- Claim epoch / claimed at / last heartbeat:
+- Supersedes (session + evidence), or none:
+- Shared-state scope (same machine / cross-machine / unknown):
 - Actual model/effort (or unknown):
+- Loaded global skill path / version / SHA-256 / source commit:
+- Loaded project overlay paths:
 - Objective:
 - Applicable authority and hard prohibitions:
 

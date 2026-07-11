@@ -11,6 +11,7 @@ fi
 
 skill_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)
 timestamp=$(date +%Y%m%d-%H%M%S)
+protocol_version=$(tr -d '[:space:]' < "$skill_dir/VERSION")
 
 resolve_target() {
   target="$1"
@@ -57,4 +58,10 @@ install_target "$HOME/.claude/skills/orchestration"
 test -f "${CODEX_HOME:-$HOME/.codex}/skills/orchestration/SKILL.md"
 test -f "$HOME/.claude/skills/orchestration/SKILL.md"
 printf 'GLOBAL_ORCHESTRATION_SKILL=ready\n'
+printf 'ORCHESTRATION_PROTOCOL_VERSION=%s\n' "$protocol_version"
+if source_root=$(git -C "$skill_dir" rev-parse --show-toplevel 2>/dev/null); then
+  printf 'ORCHESTRATION_SOURCE_HEAD=%s\n' "$(git -C "$source_root" rev-parse HEAD 2>/dev/null || true)"
+else
+  printf 'ORCHESTRATION_SOURCE_HEAD=unknown\n'
+fi
 printf 'Restart the host or start a new session before first use.\n'

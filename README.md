@@ -4,10 +4,11 @@ A cross-runtime global skill that initializes the invoking Claude or Codex sessi
 
 The skill establishes roles, decision tiers, clean-room advisor prompts, actual-model provenance, liveness timeouts, bounded workers, state recovery, and hard permission gates. It does not grant merge, deploy, spend, credential, production, or external-write authority. Project rules always override it.
 
-## Recommended installation: clone once, link both runtimes
+## Recommended installation: pin once, link both runtimes
 
 ```bash
 gh repo clone BELCORT-SDN-BHD/orchestration-skill ~/.local/share/orchestration-skill
+git -C ~/.local/share/orchestration-skill checkout --detach v1.0.0
 bash ~/.local/share/orchestration-skill/skills/orchestration/scripts/install-global.sh --backup-existing
 ```
 
@@ -18,10 +19,13 @@ Both global skill paths point to the same Git clone:
 - `~/.codex/skills/orchestration`
 - `~/.claude/skills/orchestration`
 
-Update every runtime with one command:
+The installed revision does not update itself. To upgrade both runtimes, fetch a reviewed release, run the tests, switch revisions, and start a fresh session:
 
 ```bash
-git -C ~/.local/share/orchestration-skill pull --ff-only
+git -C ~/.local/share/orchestration-skill fetch --tags
+git -C ~/.local/share/orchestration-skill checkout --detach <reviewed-release-tag>
+python3 ~/.local/share/orchestration-skill/tests/validate_skill.py
+bash ~/.local/share/orchestration-skill/tests/smoke.sh
 ```
 
 ## Codex skill-installer alternative
@@ -46,6 +50,12 @@ bash tests/smoke.sh
 ```
 
 The smoke suite covers clean installation, idempotent reruns, refusal to overwrite existing skills, and backup-preserving migration.
+
+## Project overlays
+
+Keep project law in a uniquely named overlay, for example `project-orchestration-overlay`; never commit a second full skill named `orchestration`. The project's guaranteed bootstrap file must require the global skill, the overlay, and its durable state checkpoint. Pin the overlay's audited protocol version and `SKILL.md` SHA-256, fail closed on incompatibility, and never fetch a mutable revision during session startup.
+
+The portability promise applies to supported, GitHub-authenticated machines after installation. The current installer and symlink tests are verified on macOS/Unix; Windows needs a separately tested adapter. Cross-machine program recovery also requires a project-approved shared state store. A local skill installation alone cannot fence two machines or transport active program state.
 
 ## What “initialize as orchestrator” means
 
