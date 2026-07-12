@@ -2,6 +2,8 @@
 
 `scripts/advisor.sh` owns the mechanics — launch flags, sandboxing, liveness, provenance capture. Its stall and wall thresholds are constants at the top of the script (printed by its usage text); pass wall minutes as the fourth argument to extend a consult, and predeclare that in the state ledger. This file defines what you feed it and what counts as a valid outcome.
 
+Lane effort is fixed in the script and the routing table (fable `xhigh`, sol `max`). One escalation exists: a consult the orchestrator explicitly labels high-consequence may pass `max` as the fifth argument on the fable lane — predeclare it in the state ledger together with a wall of at least 40 minutes (the script enforces the pairing). The sol lane never escalates: `ultra` is a multi-agent mode, and delegation is exactly what the pack's opening line forbids; the script disables codex multi-agent mechanically and records any `spawn_agent` call as a protocol violation. A sol consult can be silent for six-plus minutes before its first event — that is deep reasoning, not a hang.
+
 ## Evidence pack (the prompt file)
 
 Open every pack with: "You are a read-only advisor. Answer directly in one memo; do not invoke skills, spawn agents, or delegate." (The codex lane cannot unload installed skills — this line is the guard.)
@@ -25,4 +27,4 @@ Round one never contains your recommendation or another advisor's answer. A seco
 
 ## Provenance
 
-`provenance.json` records requested vs observed model/effort, session/thread id, prompt and output SHA-256, timestamps, and final status. The claude lane reads the observed model from the CLI's JSON result metadata; observed effort is not exposed there, so `observed_effort: unknown` is expected on that lane, not a provenance failure. The sol lane reads model and effort from the codex rollout file under the codex home — which is why `advisor.sh` never passes `--ephemeral`. A model's self-identification in its own prose is never proof. Do not make a paid advisor call without the authority the user/project requires.
+`provenance.json` records requested vs observed model/effort, session/thread id, prompt and output SHA-256, timestamps, and final status. It also records `memo_partial` (a fable memo recovered from the event stream after a kill — usable as evidence of what the advisor was thinking, never as a completed memo) and `spawn_agent_calls` (sol lane; any nonzero value is a protocol violation — report it to the user and treat the memo as tainted). The claude lane reads the observed model from the CLI's JSON result metadata; observed effort is not exposed there, so `observed_effort: unknown` is expected on that lane, not a provenance failure. The sol lane reads model and effort from the codex rollout file under the codex home — which is why `advisor.sh` never passes `--ephemeral`. A model's self-identification in its own prose is never proof. Do not make a paid advisor call without the authority the user/project requires.
