@@ -20,7 +20,10 @@ if command -v claude >/dev/null 2>&1; then
   claude_help=$(claude --help 2>/dev/null)
   printf 'CLAUDE_VERSION=%s\n' "$(claude --version 2>/dev/null | head -1)"
   fable_ok=yes
-  for flag in --effort --permission-mode --disable-slash-commands --output-format --tools; do
+  # --strict-mcp-config and --settings are the flags that strip user MCP
+  # servers and hooks from the advisor session — losing either silently
+  # breaks the read-only guarantee, so preflight must verify them too.
+  for flag in --effort --permission-mode --disable-slash-commands --output-format --tools --strict-mcp-config --settings; do
     if ! printf '%s' "$claude_help" | grep -q -- "$flag"; then
       printf 'CLAUDE_MISSING_FLAG=%s\n' "$flag"
       fable_ok=no

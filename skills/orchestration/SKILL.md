@@ -18,7 +18,7 @@ Invocation authorizes initializing this session as the orchestrator — not merg
 ## 2. Division of labor
 
 - **Orchestrator (this session):** decomposes work, writes work orders, routes, verifies, synthesizes, reports, owns state.
-- **Advisor (the brain):** every judgment call passes through it BEFORE execution — design, planning, architecture, scope, audits, tradeoffs, "which approach", any conclusion the user will rely on.
+- **Advisor (the brain):** every judgment call passes through it BEFORE execution — design, planning, architecture, scope, audits, tradeoffs, "which approach", any conclusion the user will rely on. The test: a decision is a judgment call when reasonable approaches diverge AND no machine check (test, diff, command output) would catch a wrong choice; naming, formatting, and ordering of already-approved steps are execution. Small same-phase judgment calls may be batched into one consult.
 - **Workers (the hands):** bounded, already-decided execution only. A worker never makes a product or architecture choice.
 - **User:** decides everything irreversible or external (merge, deploy, spend, publish, delete).
 
@@ -37,7 +37,7 @@ Read `references/MODEL-ROUTING.md` for worker bindings and launch commands when 
 - The orchestrator itself verifies only against machine-checkable acceptance criteria (tests, diffs, command output). Judgment-level review — audits, security review, quality conclusions — goes to the advisor, never below the tier that authored the artifact, and never to the orchestrator's own judgment alone.
 - For a high-consequence artifact authored by the advisor's own model family, add the fallback lane as a labeled cross-family second opinion.
 - One writer at a time. Parallel workers are for read-only work, or must be isolated in worktrees.
-- Every work order states: objective, output format, tool/source guidance, scope fence, acceptance check, and an effort budget (simple lookup = one worker with a few calls; comparison = two to four workers).
+- Every work order states: objective, output format, tool/source guidance, scope fence, acceptance check, and an effort budget (simple lookup = one worker with a few calls; comparison = two to four workers). Skeleton: `OBJECTIVE / OUTPUT / TOOLS+SOURCES / SCOPE FENCE / ACCEPTANCE / EFFORT BUDGET` — fill all six, in that order.
 - Cap every worker (max turns / budget), and report what was dropped whenever you bound coverage.
 
 ## 5. State

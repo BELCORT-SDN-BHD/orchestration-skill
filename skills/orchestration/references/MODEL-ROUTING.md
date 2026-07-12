@@ -6,12 +6,14 @@ Model names live only in this file and in `scripts/advisor.sh` (`tests/` may use
 
 | Lane key | Model | Effort | Price | Launch |
 |---|---|---|---|---|
-| `fable` | Claude Fable 5 | `max` | $10 / $50 | `scripts/advisor.sh fable <prompt> <out-dir>` |
-| `sol` | GPT-5.6 Sol | `ultra` | $5 / $30 | `scripts/advisor.sh sol <prompt> <out-dir>` |
+| `fable` | Claude Fable 5 | `xhigh` (escalate to `max` only for a consult predeclared high-consequence, with wall >= 40 min — pass both as args 4/5) | $10 / $50 | `scripts/advisor.sh fable <prompt> <out-dir>` |
+| `sol` | GPT-5.6 Sol | `max` (`ultra` is banned — see below) | $5 / $30 | `scripts/advisor.sh sol <prompt> <out-dir>` |
+
+Effort rationale (2026-07-12 review): `xhigh` is Anthropic's recommended setting for capability-sensitive agentic work and Claude Code's own default; `max` is documented for frontier, latency-insensitive problems and routinely outruns the 20-minute wall (a walled consult burns the single fallback run). On the GPT lane, `ultra` is not deeper single-model reasoning — it layers multi-agent fanout (`spawn_agent`) on top of `max`-level reasoning, which is exactly what the advisor protocol forbids; `max` is the deepest single-agent setting, and `advisor.sh` additionally disables codex multi-agent mechanically and records any `spawn_agent` call in provenance. Note: with ChatGPT-plan auth the sol lane draws shared plan credits and can go `unavailable (capacity)` after heavy GPT-lane worker use — one more reason the fallback lane matters.
 
 ## Workers (the hands)
 
-Defaults are Claude-native; the GPT lane is a deliberate alternate with a stated trigger, not an equal column. Decided 2026-07-11 (GPT-5.6 was 2 days post-GA) — **re-evaluate ~2026-08-15**, and re-run the Standard-lane math on 2026-09-01 when Sonnet 5 intro pricing ends.
+Defaults are Claude-native; the GPT lane is a deliberate alternate with a stated trigger, not an equal column. Decided 2026-07-11 (GPT-5.6 was 2 days post-GA) — **re-evaluate ~2026-08-15**, and re-run the Standard-lane math on 2026-09-01 when Sonnet 5 intro pricing ends. That September comparison must use measured, tokenizer-adjusted $/task — Sonnet 5's tokenizer yields ~1.0-1.35x the tokens of Sonnet 4.6 for the same text — not list $/MTok, or the math will silently favor Sonnet 5.
 
 | Lane | Task classes | Default | Alternate — use when |
 |---|---|---|---|
@@ -22,9 +24,9 @@ Defaults are Claude-native; the GPT lane is a deliberate alternate with a stated
 
 Why these defaults (evidence as of 2026-07-11):
 
-- **Repo-level coding still favors Claude** — on SWE-bench Pro, OpenAI's own launch table has Sol 64.6% vs Opus 4.8 69.2% (Sonnet 5 63.2 ≈ Terra 63.4). Prior generation showed the same split (Opus 4.7 64.3 vs GPT-5.5 58.6).
+- **Repo-level coding still favors Claude** — on SWE-bench Pro, Sol 64.6% vs Opus 4.8 69.2% per the Scale leaderboard (Sonnet 5 63.2 ≈ Terra 63.4). Prior generation showed the same split (Opus 4.7 64.3 vs GPT-5.5 58.6). Caveat (2026-07-09): OpenAI published an audit claiming ~30% of SWE-bench Pro tasks are broken and retracted its recommendation of the benchmark — self-interested but public — so this rationale also rests on the prior-generation split and the integration tax, not SWE-bench Pro alone.
 - **Terminal-style execution favors GPT-5.6 at every tier** (Terminal-Bench 2.1: 88.8/87.4/84.7 vs Opus ~74-79) — hence the terminal-shaped trigger, discounted ~5 points for harness effects.
-- **GPT-5.6's real edge is efficiency**: independent AA data shows ~54% fewer output tokens and ~57% less wall-clock per task (Sol ≈ $1.04/task vs Opus ≈ $1.99) — why Sol is the cost escape valve on long Heavy runs.
+- **GPT-5.6's efficiency edge vs Opus is real but modest**: the widely quoted ~54% fewer output tokens / ~57% less wall-clock figures are OpenAI's framing of AA data with Claude Fable 5 (not Opus) as the comparator. AA's own Coding Agent Index puts Sol only ~10% cheaper per task than Opus 4.8; on the Intelligence Index (max effort) Sol ≈ $1.04/task vs Opus ≈ $1.78. Sol is a mild cost/latency valve on long Heavy runs, not a halving.
 - **Integration tax breaks ties**: native subagents keep the repo-context cache warm across calls; every `codex exec` shell-out re-ships context at full input price. Ties go Claude-native; only Heavy-lane runs amortize the shell-out.
 - Independent post-GA evidence is 2 days old (one AA index, no practitioner track record) — challenger slots, not default flips.
 
@@ -59,8 +61,8 @@ claude -p --model sonnet --effort high --permission-mode acceptEdits \
 
 Citations only — the operative rules live in SKILL.md §4.
 
-- Planning/judgment never routes down: PEAR, arXiv 2510.07505; AgentCARD, arXiv 2606.20629.
-- The advisor gate pays for itself: claude.com/blog/the-advisor-strategy.
-- Verifier ≥ author tier: arXiv 2606.28050.
+- Planning/judgment never routes down: AgentCARD, arXiv 2606.20629 — role-aware heterogeneous assignment beats uniform deployment; note its own finding is that which role binds is domain-dependent, so this supports the rule as a default, not a law. (PEAR, arXiv 2510.07505, previously cited here, was withdrawn by arXiv administrators — do not cite.)
+- The advisor gate pays for itself: claude.com/blog/the-advisor-strategy — note the blog describes selective, executor-initiated consultation, cheaper than this skill's universal gate; it supports the mechanism, not the every-call mandate.
+- Verifier ≥ author tier: engineering judgment, not literature. (arXiv 2606.28050, previously cited here, studies self-evaluation of in-context QA, not cross-tier verification; its finding that judging is not easier than generating argues against cheap verifiers, which is the spirit of the rule.)
 - Work-order discipline beats bigger workers: MAST, arXiv 2503.13657 (~79% of multi-agent failures are specification/coordination, not model capability).
 - Coding parallelizes poorly; research fans out safely: anthropic.com/engineering/multi-agent-research-system.
