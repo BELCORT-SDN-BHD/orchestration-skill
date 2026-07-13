@@ -9,7 +9,7 @@
 ## Control plane
 - Session/thread:
 - Objective:
-- Orchestrator lane (observed or unknown):
+- Orchestrator profile (host-derived):
 - Applicable authority and hard prohibitions:
 
 ## VERIFIED

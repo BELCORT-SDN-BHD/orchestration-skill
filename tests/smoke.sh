@@ -52,10 +52,26 @@ test -f "$migrate_home/.local/share/orchestration-skill-backups/claude-orchestra
 bash -n "$repo_root/skills/orchestration/scripts/install-global.sh"
 bash -n "$repo_root/skills/orchestration/scripts/preflight.sh"
 
-preflight_output=$(PATH="/usr/bin:/bin" "$repo_root/skills/orchestration/scripts/preflight.sh")
-grep -q '^PREFLIGHT_VERSION=3$' <<<"$preflight_output"
-grep -q '^CURRENT_SESSION_MODEL=unverifiable_from_shell$' <<<"$preflight_output"
-grep -q '^NOTE=availability_evidence_only$' <<<"$preflight_output"
+preflight="$repo_root/skills/orchestration/scripts/preflight.sh"
+set +e
+"$preflight" >/dev/null 2>&1
+missing_runtime_status=$?
+"$preflight" unsupported >/dev/null 2>&1
+unsupported_runtime_status=$?
+set -e
+test "$missing_runtime_status" -eq 2
+test "$unsupported_runtime_status" -eq 2
+
+codex_preflight=$(PATH="/usr/bin:/bin" "$preflight" codex)
+grep -q '^PREFLIGHT_VERSION=4$' <<<"$codex_preflight"
+grep -q '^HOST_RUNTIME=codex$' <<<"$codex_preflight"
+grep -q '^ORCHESTRATOR_FAMILY=openai$' <<<"$codex_preflight"
+grep -q '^NOTE=host_profile_and_availability_evidence$' <<<"$codex_preflight"
+
+claude_preflight=$(PATH="/usr/bin:/bin" "$preflight" claude-code)
+grep -q '^PREFLIGHT_VERSION=4$' <<<"$claude_preflight"
+grep -q '^HOST_RUNTIME=claude-code$' <<<"$claude_preflight"
+grep -q '^ORCHESTRATOR_FAMILY=claude$' <<<"$claude_preflight"
 
 printf 'SMOKE_TEST=pass\n'
 printf 'TEST_ROOT=%s\n' "$test_root"

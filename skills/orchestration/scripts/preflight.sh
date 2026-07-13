@@ -1,10 +1,29 @@
 #!/usr/bin/env bash
-# Availability evidence for orchestrator and worker lanes. This script never
-# proves the model of the already-running host session.
+# Availability evidence for host-derived orchestrator and worker profiles.
 set -u
 
-printf 'PREFLIGHT_VERSION=3\n'
-printf 'CURRENT_SESSION_MODEL=unverifiable_from_shell\n'
+usage() {
+  echo "usage: $0 <codex|claude-code>" >&2
+  exit 2
+}
+
+[ "$#" -eq 1 ] || usage
+
+case "$1" in
+  codex)
+    host_runtime=codex
+    orchestrator_family=openai
+    ;;
+  claude-code)
+    host_runtime=claude-code
+    orchestrator_family=claude
+    ;;
+  *) usage ;;
+esac
+
+printf 'PREFLIGHT_VERSION=4\n'
+printf 'HOST_RUNTIME=%s\n' "$host_runtime"
+printf 'ORCHESTRATOR_FAMILY=%s\n' "$orchestrator_family"
 
 if root=$(git rev-parse --show-toplevel 2>/dev/null); then
   printf 'GIT_ROOT=%s\n' "$root"
@@ -45,4 +64,4 @@ else
   printf 'OPENAI_LANES=unavailable\n'
 fi
 
-printf 'NOTE=availability_evidence_only\n'
+printf 'NOTE=host_profile_and_availability_evidence\n'

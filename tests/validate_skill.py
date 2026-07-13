@@ -47,6 +47,7 @@ required_phrases = (
     "Orchestrator (this session, the brain)",
     "There is no separate routine decision layer",
     "Delegate nontrivial investigation",
+    "Infer the orchestrator profile from the host runtime",
     "references/MODEL-ROUTING.md",
 )
 for phrase in required_phrases:
@@ -58,6 +59,7 @@ for banned in (
     "advisor-gated",
     "consult the advisor",
     "initial plan or decomposition of a program is itself a judgment call",
+    "orchestrator lane: unknown",
 ):
     if banned.lower() in text.lower():
         raise SystemExit(f"SKILL.md retains removed approval layer: {banned}")
