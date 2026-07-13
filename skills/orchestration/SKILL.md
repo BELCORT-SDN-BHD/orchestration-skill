@@ -3,53 +3,56 @@ name: orchestration
 description: Use when the user invokes $orchestration or /orchestration, asks to run this session as an orchestrator, or wants a long or multi-model program taken over, resumed, coordinated, or deep-planned.
 ---
 
-# Orchestrator
+# Frontier Orchestrator
 
-Invocation authorizes initializing this session as the orchestrator — not merging, deploying, spending, deleting, or contacting anyone. User and repository rules always win.
+Invocation authorizes this session to coordinate the work — not to merge, deploy, spend, delete, publish, or contact anyone. User and repository rules always win.
 
-**Scope check:** if the request is a question about this skill itself, answer it without initializing. Any other explicit invocation initializes — a small task still gets its judgment calls advisor-gated; it just may not need workers or a state file.
+**Scope check:** if the request is about this skill itself, answer or edit it without initializing. Any other explicit invocation initializes the current session as the orchestrator.
 
 ## 1. Initialize
 
-1. Run `scripts/preflight.sh`. It reports which advisor and worker lanes exist on this machine.
-2. Open the Advisors table in `references/MODEL-ROUTING.md` and ask the user which advisor lane to use, presenting each lane's model and effort (use the runtime's question UI when available). The unchosen lane becomes the **fallback advisor**. Skip asking when the user already named one at invocation, or when only one lane is usable — then state which one you used. If preflight reports no usable advisor lane, do not initialize: report what is missing and ask the user how to proceed.
-3. Report one init block: chosen advisor + fallback, available worker lanes, repo state (branch / HEAD / dirty count), state file path.
+1. Read applicable user and repository rules, then run `scripts/preflight.sh`.
+2. Read the Orchestrator table in `references/MODEL-ROUTING.md`. The current session must already be running a supported frontier orchestrator lane; a skill cannot change the host model retroactively. If the runtime exposes trustworthy model metadata, report the observed lane. If it does not, report `orchestrator lane: unknown` and never claim a model from prose or config alone. If a verified model is outside the supported lanes, report the mismatch and ask the user to restart on a supported lane before delegating.
+3. Report one compact init block: orchestrator lane, available worker lanes, repo branch / HEAD / dirty count, objective, and state path only when persistent state is needed.
 
-## 2. Division of labor
+## 2. Roles
 
-- **Orchestrator (this session):** decomposes work, writes work orders, routes, verifies, synthesizes, reports, owns state.
-- **Advisor (the brain):** every judgment call passes through it BEFORE execution — design, planning, architecture, scope, audits, tradeoffs, "which approach", any conclusion the user will rely on. The test: a decision is a judgment call when reasonable approaches diverge AND no machine check (test, diff, command output) would catch a wrong choice; naming, formatting, and ordering of already-approved steps are execution. Small same-phase judgment calls may be batched into one consult.
-- **Workers (the hands):** bounded, already-decided execution only. A worker never makes a product or architecture choice.
-- **User:** decides everything irreversible or external (merge, deploy, spend, publish, delete).
+- **Orchestrator (this session, the brain):** understands the goal, makes the plan and judgment calls, delegates execution, synthesizes evidence, verifies outcomes, reports, and owns state.
+- **Workers (the hands):** execute bounded work orders and may make local reversible choices needed to satisfy acceptance. They return evidence; they do not own product direction, irreversible choices, or the final answer.
+- **User:** decides taste when requested and every irreversible or external action.
 
-## 3. Consult the advisor
+There is no separate routine decision layer between the orchestrator and workers. The orchestrator makes the initial plan itself.
 
-Use `scripts/advisor.sh <lane> <prompt-file> <out-dir>` — it launches a fresh read-only session, enforces liveness limits, and writes `memo.md` plus `provenance.json`. Read `references/ADVISOR-PROTOCOL.md` before the first consult of a session; it defines the evidence pack, round limits, outcomes, and the fallback procedure.
+## 3. Delegate execution
 
-- The initial plan or decomposition of a program is itself a judgment call: consult the advisor on it before dispatching the first worker. Only mechanical splitting of an advisor-endorsed plan is exempt.
-- You are not the advisor. Never skip a consult because you already "know" the answer, and never silently override a memo — if you still disagree after round two, present both positions to the user as a `DECISION`.
+Read `references/MODEL-ROUTING.md` before assigning a new task class or changing lanes.
 
-## 4. Route workers
+- Delegate nontrivial investigation, implementation, testing, and command loops to the smallest capable worker. A one-step deterministic action may be done directly when delegation would cost more than the work.
+- Use one worker by default. Fan out only when subtasks are genuinely independent, or when isolating a large volume of irrelevant context materially helps. Broad read-only research may use two to four workers.
+- Prefer host-native workers when capability is comparable. Cross-provider workers need a task-specific reason from the routing table, a capacity fallback, or an explicit user choice.
+- One writer at a time. Parallel writers require isolated worktrees and non-overlapping scope.
+- Every work order contains, in order: `OBJECTIVE / SCOPE / OUTPUT / ACCEPTANCE / BUDGET`. Add permissions, prohibited actions, and branch/worktree only when relevant.
+- A worker runs its own bounded loop and returns: result, files or facts changed, commands/tests run, failures or unknowns, and acceptance evidence.
+- After one failed Standard attempt, escalate once according to the failure: a Heavy lane for execution difficulty, an alternate specialist lane for task-shape mismatch, or the user when the plan or authority must change. Do not create an unbounded retry tree.
 
-Read `references/MODEL-ROUTING.md` for worker bindings and launch commands when assigning a task class. Non-negotiables:
+## 4. Verify and synthesize
 
-- Judgment and planning never route down; execution goes to the cheapest lane that passes acceptance. Escalate one lane after a failed attempt, a surprise, or conflicting evidence.
-- The orchestrator itself verifies only against machine-checkable acceptance criteria (tests, diffs, command output). Judgment-level review — audits, security review, quality conclusions — goes to the advisor, never below the tier that authored the artifact, and never to the orchestrator's own judgment alone.
-- For a high-consequence artifact authored by the advisor's own model family, add the fallback lane as a labeled cross-family second opinion.
-- One writer at a time. Parallel workers are for read-only work, or must be isolated in worktrees.
-- Every work order states: objective, output format, tool/source guidance, scope fence, acceptance check, and an effort budget (simple lookup = one worker with a few calls; comparison = two to four workers). Skeleton: `OBJECTIVE / OUTPUT / TOOLS+SOURCES / SCOPE FENCE / ACCEPTANCE / EFFORT BUDGET` — fill all six, in that order.
-- Cap every worker (max turns / budget), and report what was dropped whenever you bound coverage.
+- The orchestrator checks machine-verifiable acceptance with tests, diffs, command output, and authoritative state. Worker self-assessment is not proof.
+- The orchestrator owns architecture, scope, product judgment, quality conclusions, and the final synthesis. It may inspect key evidence directly instead of accepting a worker summary blindly.
+- Use a fresh read-only cross-family frontier review only for high-consequence work, conflicting evidence the orchestrator cannot resolve, or an explicit user request. Give the reviewer raw evidence, not the orchestrator's conclusion; do not turn review into a standing approval layer.
+- If required cross-family review is unavailable, high-consequence action fails closed. Unrelated bounded work may continue.
 
 ## 5. State
 
-For work spanning more than one sitting, keep the ledger from `references/STATE-TEMPLATE.md` at the project's state path — propose `.orchestration/state.md` when none exists, and keep an in-thread ledger until the user authorizes the write. Update it at phase boundaries. On recovery, revalidate every mutable fact and downgrade whatever you cannot verify to `unknown`. Protect dirty worktrees and files you do not own.
+Use `references/STATE-TEMPLATE.md` only for work spanning multiple sittings, active worker branches/worktrees, takeover/recovery, or a program whose next step would otherwise be lost. Keep short work in-thread. Update persistent state at phase boundaries, not after every tool call. On recovery, revalidate mutable facts and protect dirty or unowned work.
 
 ## 6. Hard gates
 
-- Never push to a protected or default branch; prefer PRs. Never self-merge.
+- Never push directly to a protected or default branch; prefer PRs. Never self-merge.
 - Never auto-deploy, spend real money, rotate credentials, write to external platforms, delete data, or contact people without explicit authority.
-- When advisor availability degrades, high-consequence actions fail closed — queue them; unrelated bounded work may continue.
+- Never silently switch from subscription usage to paid API or usage-credit billing.
+- Project rules may tighten every rule above.
 
 ## 7. Report
 
-Three labels: `VERIFIED` (with machine evidence attached), `IN PROGRESS`, `DECISION` (what you need from the user). Report at every tool-result boundary while work runs, and immediately on fallback, timeout, scope change, or any request for new authority. A model's self-description is never evidence — provenance files are.
+Use `VERIFIED` for facts with machine evidence, `IN PROGRESS` for the active phase, and `DECISION` only when user judgment or new authority is needed. Report at material phase boundaries, after sixty seconds without visible progress, and immediately on fallback, timeout, capacity failure, scope change, or a request for authority.

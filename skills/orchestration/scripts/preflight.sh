@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Availability evidence for the orchestrator init block. Config output is
-# never proof of the current session's model.
+# Availability evidence for orchestrator and worker lanes. This script never
+# proves the model of the already-running host session.
 set -u
 
-printf 'PREFLIGHT_VERSION=2\n'
+printf 'PREFLIGHT_VERSION=3\n'
 printf 'CURRENT_SESSION_MODEL=unverifiable_from_shell\n'
 
 if root=$(git rev-parse --show-toplevel 2>/dev/null); then
@@ -15,41 +15,34 @@ else
   printf 'GIT_ROOT=none\n'
 fi
 
-# Advisor lane: fable (claude CLI)
 if command -v claude >/dev/null 2>&1; then
   claude_help=$(claude --help 2>/dev/null)
   printf 'CLAUDE_VERSION=%s\n' "$(claude --version 2>/dev/null | head -1)"
-  fable_ok=yes
-  # --strict-mcp-config and --settings are the flags that strip user MCP
-  # servers and hooks from the advisor session — losing either silently
-  # breaks the read-only guarantee, so preflight must verify them too.
-  for flag in --effort --permission-mode --disable-slash-commands --output-format --tools --strict-mcp-config --settings; do
+  claude_ok=yes
+  for flag in --model --effort --permission-mode --disable-slash-commands --output-format; do
     if ! printf '%s' "$claude_help" | grep -q -- "$flag"; then
       printf 'CLAUDE_MISSING_FLAG=%s\n' "$flag"
-      fable_ok=no
+      claude_ok=no
     fi
   done
-  printf 'ADVISOR_FABLE=%s\n' "$fable_ok"
-  printf 'WORKER_CLAUDE_LANES=native_subagents_or_cli\n'
+  printf 'CLAUDE_LANES=%s\n' "$claude_ok"
 else
-  printf 'ADVISOR_FABLE=unavailable\n'
+  printf 'CLAUDE_LANES=unavailable\n'
 fi
 
-# Advisor lane: sol (codex CLI)
 if command -v codex >/dev/null 2>&1; then
   codex_help=$(codex exec --help 2>/dev/null)
   printf 'CODEX_VERSION=%s\n' "$(codex --version 2>/dev/null | head -1)"
-  sol_ok=yes
-  for flag in --sandbox --json --ignore-user-config --skip-git-repo-check --output-last-message; do
+  openai_ok=yes
+  for flag in --model --sandbox --json --ignore-user-config --skip-git-repo-check --output-last-message; do
     if ! printf '%s' "$codex_help" | grep -q -- "$flag"; then
       printf 'CODEX_MISSING_FLAG=%s\n' "$flag"
-      sol_ok=no
+      openai_ok=no
     fi
   done
-  printf 'ADVISOR_SOL=%s\n' "$sol_ok"
-  printf 'WORKER_GPT_LANES=codex_exec\n'
+  printf 'OPENAI_LANES=%s\n' "$openai_ok"
 else
-  printf 'ADVISOR_SOL=unavailable\n'
+  printf 'OPENAI_LANES=unavailable\n'
 fi
 
 printf 'NOTE=availability_evidence_only\n'

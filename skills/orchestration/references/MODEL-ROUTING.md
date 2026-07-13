@@ -1,68 +1,81 @@
-# Model routing — the single binding table
+# Model routing — frontier orchestrators and bounded workers
 
-Model names live only in this file and in `scripts/advisor.sh` (`tests/` may use stub fixtures). Bindings verified on 2026-07-11 against claude CLI 2.1.206 and codex CLI 0.144.0; rerun `scripts/preflight.sh` when in doubt. Prices are $/MTok input/output, standard tier, July 2026.
+Model names live only in this file. Bindings were last reviewed on 2026-07-13 against Claude Code and Codex subscription workflows. Re-run `scripts/preflight.sh` after CLI upgrades. Optimize for accepted-task quality, wall time, quota/credit use, and runtime locality — not API list price alone.
 
-## Advisors (the brain — user picks one at init, the other is fallback)
+## Orchestrators — the brain in the main loop
 
-| Lane key | Model | Effort | Price | Launch |
-|---|---|---|---|---|
-| `fable` | Claude Fable 5 | `xhigh` (escalate to `max` only for a consult predeclared high-consequence, with wall >= 40 min — pass both as args 4/5) | $10 / $50 | `scripts/advisor.sh fable <prompt> <out-dir>` |
-| `sol` | GPT-5.6 Sol | `max` (`ultra` is banned — see below) | $5 / $30 | `scripts/advisor.sh sol <prompt> <out-dir>` |
+The skill must be invoked from a session already running one of these lanes. The orchestrator plans, delegates, synthesizes, and decides; it should avoid long token-heavy execution loops that a worker can own.
 
-Effort rationale (2026-07-12 review): `xhigh` is Anthropic's recommended setting for capability-sensitive agentic work and Claude Code's own default; `max` is documented for frontier, latency-insensitive problems and routinely outruns the 20-minute wall (a walled consult burns the single fallback run). On the GPT lane, `ultra` is not deeper single-model reasoning — it layers multi-agent fanout (`spawn_agent`) on top of `max`-level reasoning, which is exactly what the advisor protocol forbids; `max` is the deepest single-agent setting, and `advisor.sh` additionally disables codex multi-agent mechanically and records any `spawn_agent` call in provenance. Note: with ChatGPT-plan auth the sol lane draws shared plan credits and can go `unavailable (capacity)` after heavy GPT-lane worker use — one more reason the fallback lane matters.
+| Lane | Model / effort | Prefer when |
+|---|---|---|
+| `fable-orchestrator` | Claude Fable 5, `xhigh` | repo understanding, product and design judgment, architecture, cross-file synthesis |
+| `sol-orchestrator` | GPT-5.6 Sol, `max` | terminal/CLI-heavy programs, environment and build strategy, long command-oriented coordination |
 
-## Workers (the hands)
+Do not ask the user to choose a model that the current session cannot become. Model selection happens when the host session is started. If the host model is unknown, report that fact instead of inventing provenance.
 
-Defaults are Claude-native; the GPT lane is a deliberate alternate with a stated trigger, not an equal column. Decided 2026-07-11 (GPT-5.6 was 2 days post-GA) — **re-evaluate ~2026-08-15**, and re-run the Standard-lane math on 2026-09-01 when Sonnet 5 intro pricing ends. That September comparison must use measured, tokenizer-adjusted $/task — Sonnet 5's tokenizer yields ~1.0-1.35x the tokens of Sonnet 4.6 for the same text — not list $/MTok, or the math will silently favor Sonnet 5.
+## Workers — the hands
 
-| Lane | Task classes | Default | Alternate — use when |
-|---|---|---|---|
-| Heavy | hard implementation, cross-file refactors, subtle debugging | Opus 4.8, effort `high` (`xhigh` when high-consequence) — $5/$25 | `gpt-5.6-sol` `high` ($5/$30) — the task is terminal/CLI-shaped (builds, env wrangling, long command loops), or a long run's token bill matters |
-| Standard | bounded implementation, tests, scoped fixes, research synthesis | Sonnet 5, `high` — intro $2/$10 through 2026-08-31, then $3/$15 | `gpt-5.6-terra` `high` ($2.50/$15) — named challenger; promote if independent repo-level data confirms parity after intro pricing ends |
-| Light | formatting, inventory, extraction, URL checks, short summaries, classification | Haiku 4.5 — $1/$5 | `gpt-5.6-luna` `low` ($1/$6) — terminal-shaped light tasks only; never long-context extraction (Luna MRCR recall 41.3% vs Terra 89.6%) |
-| Search | read-only repo/web sweeps | Explore subagent (pin `model: haiku` for simple lookups) | — |
+| Lane | Model / effort | Default tasks |
+|---|---|---|
+| `claude-light` | Haiku 4.5 | inventory, extraction, formatting, URL checks, short summaries |
+| `claude-standard` | Sonnet 5, `high` | bounded repo implementation, tests, scoped fixes, research synthesis |
+| `claude-heavy` | Opus 4.8, `high` | hard implementation, subtle debugging, cross-file refactors after a Standard failure |
+| `openai-light` | GPT-5.6 Luna, `low` | terminal-shaped lookups, classification, small deterministic commands |
+| `openai-standard` | GPT-5.6 Terra, `high` | terminal/build loops, bounded implementation, environment work, tests |
+| `openai-heavy` | GPT-5.6 Sol, `high` | hard terminal/CLI execution, long command loops, difficult debugging after a Standard failure |
 
-Why these defaults (evidence as of 2026-07-11):
+## Host profiles
 
-- **Repo-level coding still favors Claude** — on SWE-bench Pro, Sol 64.6% vs Opus 4.8 69.2% per the Scale leaderboard (Sonnet 5 63.2 ≈ Terra 63.4). Prior generation showed the same split (Opus 4.7 64.3 vs GPT-5.5 58.6). Caveat (2026-07-09): OpenAI published an audit claiming ~30% of SWE-bench Pro tasks are broken and retracted its recommendation of the benchmark — self-interested but public — so this rationale also rests on the prior-generation split and the integration tax, not SWE-bench Pro alone.
-- **Terminal-style execution favors GPT-5.6 at every tier** (Terminal-Bench 2.1: 88.8/87.4/84.7 vs Opus ~74-79) — hence the terminal-shaped trigger, discounted ~5 points for harness effects.
-- **GPT-5.6's efficiency edge vs Opus is real but modest**: the widely quoted ~54% fewer output tokens / ~57% less wall-clock figures are OpenAI's framing of AA data with Claude Fable 5 (not Opus) as the comparator. AA's own Coding Agent Index puts Sol only ~10% cheaper per task than Opus 4.8; on the Intelligence Index (max effort) Sol ≈ $1.04/task vs Opus ≈ $1.78. Sol is a mild cost/latency valve on long Heavy runs, not a halving.
-- **Integration tax breaks ties**: native subagents keep the repo-context cache warm across calls; every `codex exec` shell-out re-ships context at full input price. Ties go Claude-native; only Heavy-lane runs amortize the shell-out.
-- Independent post-GA evidence is 2 days old (one AA index, no practitioner track record) — challenger slots, not default flips.
+### Fable orchestrator
 
-**Codebase mapping** (understand-the-repo): the one shape that fans out wide — split by subsystem, one read-only worker each (inventory sweeps on the Search lane, judgment-adjacent module reads on the Standard lane), every work order demanding the same structured map (entry points, data flow, dependencies, conventions, risks). The orchestrator synthesizes the full picture into the state file. A cheap reader can summarize away exactly what matters: any conclusion the map will drive — refactor direction, architecture verdict, audit finding — still goes through the advisor, which spot-checks the key files itself.
+- Default repo worker: `claude-standard`.
+- Default terminal/build worker: `openai-standard` when the task is materially command-shaped; otherwise stay native.
+- Light work: `claude-light`; use `openai-light` only for terminal-shaped work or Claude capacity fallback.
+- Heavy escalation: `claude-heavy` for repo/coding difficulty; `openai-heavy` for terminal/environment difficulty.
 
-Mapping quality escalates by layer, not by defaulting to a flagship reader: core or subtle modules (concurrency, security-critical, dense abstractions) read on the Heavy lane; the user saying "audit-grade" raises all module reads to Heavy; a user-named reader always wins. Reader effort caps at `high` — deeper reasoning buys nothing on coverage reads, and `ultra` on the GPT lane is a multi-agent mode, wrong for a bounded reader.
+### Sol orchestrator
 
-**Inside Claude Code**, run Claude-family workers as native subagents — the Agent/Task tool takes `model:` (`sonnet`/`haiku`/`opus`), `effort:`, `maxTurns`, and `isolation: worktree`, and provenance comes with the transcript. Shell out only for GPT-family workers or deliberate cross-family review.
+- Default terminal/build worker: `openai-standard`.
+- Default repo worker: `claude-standard` when repo-level context and cross-file coding dominate; otherwise stay native.
+- Light work: `openai-light`; use `claude-light` for long-context extraction or OpenAI capacity fallback.
+- Heavy escalation: `openai-heavy` for terminal/environment difficulty; `claude-heavy` for repo/coding difficulty.
 
-**Permissions must match the work order.** Read-only lanes get read-only sessions; implementation lanes need write access, or the worker silently produces prose instead of edits:
+## Dispatch rules
+
+Runtime locality breaks ties: native workers avoid a cross-provider cold start and repeated context shipment. Cross-provider dispatch is justified only by a named task-shape advantage, provider capacity, a Standard failure, or explicit user direction.
+
+Normal work gets one worker. Use two to four read-only workers only for independent research facets or codebase mapping by non-overlapping subsystem. Coding is usually sequential: keep one writer, or isolate non-overlapping writers in worktrees.
+
+Worker effort stays at the table default. Raise effort only after a failed bounded attempt or when the work order is explicitly high-consequence. Do not use multi-agent effort modes inside a worker; fanout belongs to the orchestrator.
+
+## Launch patterns
+
+Inside Claude Code, use native subagents for Claude-family workers with the required model, effort, `maxTurns`, and worktree isolation. Inside Codex, use native collaboration for OpenAI-family workers when the runtime exposes a suitable lane. Shell out only for the other provider or when native lane selection is unavailable.
 
 ```bash
-# GPT research worker: fresh, read-only
+# OpenAI read-only worker
 codex exec --ignore-user-config --skip-git-repo-check --sandbox read-only \
-  -m gpt-5.6-luna -c model_reasoning_effort=low --json \
+  -m gpt-5.6-terra -c model_reasoning_effort=high --json \
   -o worker-out.md - < work-order.md
 
-# GPT implementation worker: may write inside the workspace
+# OpenAI implementation worker
 codex exec --ignore-user-config --skip-git-repo-check --sandbox workspace-write \
-  -m gpt-5.6-terra --json -o worker-out.md - < work-order.md
+  -m gpt-5.6-terra -c model_reasoning_effort=high --json \
+  -o worker-out.md - < work-order.md
 
-# Claude worker from a non-Claude-Code control plane:
-#   read-only research  -> --permission-mode dontAsk
-#   implementation      -> --permission-mode acceptEdits
-#                          (+ scoped --allowedTools "Bash(npm test:*)" as needed)
+# Claude read-only worker
+claude -p --model sonnet --effort high --permission-mode dontAsk \
+  --disable-slash-commands --output-format json \
+  < work-order.md > worker-out.json
+
+# Claude implementation worker
 claude -p --model sonnet --effort high --permission-mode acceptEdits \
-  --disable-slash-commands --max-budget-usd 2 --output-format json \
+  --disable-slash-commands --output-format json \
   < work-order.md > worker-out.json
 ```
 
-## Evidence behind the SKILL.md §4 non-negotiables
+Match permissions to the work order. Never silently enable API-key billing or usage-credit top-ups.
 
-Citations only — the operative rules live in SKILL.md §4.
+## Exceptional cross-family review
 
-- Planning/judgment never routes down: AgentCARD, arXiv 2606.20629 — role-aware heterogeneous assignment beats uniform deployment; note its own finding is that which role binds is domain-dependent, so this supports the rule as a default, not a law. (PEAR, arXiv 2510.07505, previously cited here, was withdrawn by arXiv administrators — do not cite.)
-- The advisor gate pays for itself: claude.com/blog/the-advisor-strategy — note the blog describes selective, executor-initiated consultation, cheaper than this skill's universal gate; it supports the mechanism, not the every-call mandate.
-- Verifier ≥ author tier: engineering judgment, not literature. (arXiv 2606.28050, previously cited here, studies self-evaluation of in-context QA, not cross-tier verification; its finding that judging is not easier than generating argues against cheap verifiers, which is the spirit of the rule.)
-- Work-order discipline beats bigger workers: MAST, arXiv 2503.13657 (~79% of multi-agent failures are specification/coordination, not model capability).
-- Coding parallelizes poorly; research fans out safely: anthropic.com/engineering/multi-agent-research-system.
+Review is not part of the normal loop. For security, credentials, migrations, production, irreversible architecture, unresolved conflicting evidence, or an explicit user request, ask the other frontier family for one fresh read-only challenge based on raw evidence. A `fable-orchestrator` uses GPT-5.6 Sol `max`; a `sol-orchestrator` uses Claude Fable 5 `xhigh`. The reviewer does not delegate, write, or replace the orchestrator. If the review disagrees materially, present the disagreement to the user.
