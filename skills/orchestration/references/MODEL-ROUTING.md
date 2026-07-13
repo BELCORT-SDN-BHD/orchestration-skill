@@ -4,14 +4,14 @@ Model names live only in this file. Bindings were last reviewed on 2026-07-13 ag
 
 ## Orchestrators — the brain in the main loop
 
-The skill must be invoked from a session already running one of these lanes. The orchestrator plans, delegates, synthesizes, and decides; it should avoid long token-heavy execution loops that a worker can own.
+The host runtime selects the profile automatically: Codex uses `sol-orchestrator`; Claude Code uses `fable-orchestrator`. The user never chooses a lane during initialization. The orchestrator plans, delegates, synthesizes, and decides; it should avoid long token-heavy execution loops that a worker can own.
 
 | Lane | Model / effort | Prefer when |
 |---|---|---|
 | `fable-orchestrator` | Claude Fable 5, `xhigh` | repo understanding, product and design judgment, architecture, cross-file synthesis |
 | `sol-orchestrator` | GPT-5.6 Sol, `max` | terminal/CLI-heavy programs, environment and build strategy, long command-oriented coordination |
 
-Do not ask the user to choose a model that the current session cannot become. Model selection happens when the host session is started. If the host model is unknown, report that fact instead of inventing provenance.
+These are host profiles, not a claim that a shell subprocess has independently proven server-side model identity. If the user manually overrides the host model, the runtime still keeps its host profile unless the user explicitly requests different routing.
 
 ## Workers — the hands
 

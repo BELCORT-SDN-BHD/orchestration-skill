@@ -11,9 +11,9 @@ Invocation authorizes this session to coordinate the work — not to merge, depl
 
 ## 1. Initialize
 
-1. Read applicable user and repository rules, then run `scripts/preflight.sh`.
-2. Read the Orchestrator table in `references/MODEL-ROUTING.md`. The current session must already be running a supported frontier orchestrator lane; a skill cannot change the host model retroactively. If the runtime exposes trustworthy model metadata, report the observed lane. If it does not, report `orchestrator lane: unknown` and never claim a model from prose or config alone. If a verified model is outside the supported lanes, report the mismatch and ask the user to restart on a supported lane before delegating.
-3. Report one compact init block: orchestrator lane, available worker lanes, repo branch / HEAD / dirty count, objective, and state path only when persistent state is needed.
+1. Read applicable user and repository rules. Infer the orchestrator profile from the host runtime: Codex uses the OpenAI profile; Claude Code uses the Claude profile. This is automatic and never asks the user to choose.
+2. Run `scripts/preflight.sh codex` in Codex or `scripts/preflight.sh claude-code` in Claude Code, then read the matching profile in `references/MODEL-ROUTING.md`. The host profile is the routing contract; do not gate initialization on shell access to exact session-model metadata and do not report an unknown lane for a supported host.
+3. Report one compact init block: host-derived orchestrator profile, available worker lanes, repo branch / HEAD / dirty count, objective, and state path only when persistent state is needed.
 
 ## 2. Roles
 

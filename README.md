@@ -19,7 +19,7 @@ gh repo clone BELCORT-SDN-BHD/orchestration-skill ~/.local/share/orchestration-s
 bash ~/.local/share/orchestration-skill/skills/orchestration/scripts/install-global.sh --backup-existing
 ```
 
-Start a new frontier-model session after installation, then invoke `$orchestration` in Codex or `/orchestration` in Claude Code. A skill cannot change the model or effort of an already-running host session.
+Start a new session after installation, then invoke `$orchestration` in Codex or `/orchestration` in Claude Code. The host selects the orchestrator profile automatically: Codex uses the OpenAI profile and Claude Code uses the Claude profile.
 
 Both global skill paths point to the same Git clone:
 
@@ -45,4 +45,4 @@ The smoke suite covers clean installation, idempotent reruns, refusal to overwri
 
 ## What initialization means
 
-The invoking session resolves project law and ground truth, reports its observed orchestrator lane when trustworthy runtime metadata is available, and selects the smallest capable workers for execution. Normal work uses one worker; parallel fanout is reserved for independent subtasks or context isolation. High-consequence external actions still return to the user.
+The invoking session resolves project law and ground truth, derives its orchestrator profile from the host runtime, and selects the smallest capable workers for execution. Normal work uses one worker; parallel fanout is reserved for independent subtasks or context isolation. High-consequence external actions still return to the user.
