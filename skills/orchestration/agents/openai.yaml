@@ -1,4 +1,4 @@
 interface:
   display_name: "Orchestrator"
-  short_description: "Initialize this session as an orchestrator: one senior advisor lane, cheap workers"
-  default_prompt: "Use $orchestration to initialize this session as the orchestrator. Ask me which advisor lane to use per the skill's routing table, then route all judgment through it and all execution to the cheapest capable worker lane."
+  short_description: "Run this frontier session as the brain and delegate execution to bounded workers"
+  default_prompt: "Use $orchestration to initialize this frontier session as the orchestrator. Make the plan and judgment calls here, route execution to the smallest capable workers, verify their evidence, and keep cross-family review exceptional."

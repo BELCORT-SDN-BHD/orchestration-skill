@@ -43,11 +43,36 @@ openai_yaml = (skill / "agents" / "openai.yaml").read_text(encoding="utf-8")
 if "$orchestration" not in openai_yaml:
     raise SystemExit("agents/openai.yaml default prompt must invoke $orchestration")
 
+required_phrases = (
+    "Orchestrator (this session, the brain)",
+    "There is no separate routine decision layer",
+    "Delegate nontrivial investigation",
+    "references/MODEL-ROUTING.md",
+)
+for phrase in required_phrases:
+    if phrase not in text:
+        raise SystemExit(f"SKILL.md missing v3 invariant: {phrase}")
+
+for banned in (
+    "every judgment call",
+    "advisor-gated",
+    "consult the advisor",
+    "initial plan or decomposition of a program is itself a judgment call",
+):
+    if banned.lower() in text.lower():
+        raise SystemExit(f"SKILL.md retains removed approval layer: {banned}")
+
+for legacy in (
+    skill / "references" / "ADVISOR-PROTOCOL.md",
+    skill / "scripts" / "advisor.sh",
+):
+    if legacy.exists():
+        raise SystemExit(f"legacy advisor artifact must be removed: {legacy.relative_to(root)}")
+
 # Core invariant: model names live only in the binding files (tests may use
 # stub fixtures). Everything else must speak in lanes and roles.
 binding_files = {
     skill / "references" / "MODEL-ROUTING.md",
-    skill / "scripts" / "advisor.sh",
 }
 model_name = re.compile(
     r"\b(Fable|Opus|Sonnet|Haiku|Terra|Luna|Sol|GPT-5[.\d]*|gpt-5[.\w-]*"
