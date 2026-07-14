@@ -5,27 +5,51 @@ repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)
 installer="$repo_root/skills/orchestration/scripts/install-global.sh"
 skill_dir="$repo_root/skills/orchestration"
 test_root=$(mktemp -d /tmp/orchestration-smoke.XXXXXX)
+import_line='@~/.claude/skills/orchestration/SKILL.md'
+codex_line='In Codex, load and follow the `$orchestration` skill at the start of every session.'
 
 empty_home="$test_root/empty"
-HOME="$empty_home" CODEX_HOME="$empty_home/.codex" "$installer"
-test "$(readlink "$empty_home/.codex/skills/orchestration")" = "$skill_dir"
+empty_codex="$empty_home/custom-codex"
+HOME="$empty_home" CODEX_HOME="$empty_codex" "$installer"
+test "$(readlink "$empty_codex/skills/orchestration")" = "$skill_dir"
 test "$(readlink "$empty_home/.claude/skills/orchestration")" = "$skill_dir"
-test "$(grep -Fxc '@~/.claude/skills/orchestration/SKILL.md' "$empty_home/.claude/CLAUDE.md")" -eq 1
-test "$(grep -Fxc 'In Codex, load and follow the `$orchestration` skill at the start of every session.' "$empty_home/.claude/CLAUDE.md")" -eq 1
+test ! -e "$empty_home/.codex"
+test "$(grep -Fxc "$import_line" "$empty_home/.claude/CLAUDE.md")" -eq 1
+test "$(grep -Fxc "$codex_line" "$empty_codex/AGENTS.md")" -eq 1
+! grep -Fqx "$codex_line" "$empty_home/.claude/CLAUDE.md"
+! grep -Fqx "$import_line" "$empty_codex/AGENTS.md"
 
-rerun_output=$(HOME="$empty_home" CODEX_HOME="$empty_home/.codex" "$installer")
+rerun_output=$(HOME="$empty_home" CODEX_HOME="$empty_codex" "$installer")
 test "$(printf '%s\n' "$rerun_output" | grep -c '^ALREADY_LINKED=')" -eq 2
 test "$(printf '%s\n' "$rerun_output" | grep -c '^ALREADY_PRESENT=')" -eq 2
-test "$(grep -Fxc '@~/.claude/skills/orchestration/SKILL.md' "$empty_home/.claude/CLAUDE.md")" -eq 1
-test "$(grep -Fxc 'In Codex, load and follow the `$orchestration` skill at the start of every session.' "$empty_home/.claude/CLAUDE.md")" -eq 1
+test "$(grep -Fxc "$import_line" "$empty_home/.claude/CLAUDE.md")" -eq 1
+test "$(grep -Fxc "$codex_line" "$empty_codex/AGENTS.md")" -eq 1
 
 preserve_home="$test_root/preserve"
-mkdir -p "$preserve_home/.claude"
+mkdir -p "$preserve_home/.claude" "$preserve_home/.codex"
 printf '# Existing instructions\n' > "$preserve_home/.claude/CLAUDE.md"
+printf '# Existing Codex instructions\n' > "$preserve_home/.codex/AGENTS.md"
 HOME="$preserve_home" CODEX_HOME="$preserve_home/.codex" "$installer"
 grep -Fqx '# Existing instructions' "$preserve_home/.claude/CLAUDE.md"
-test "$(grep -Fxc '@~/.claude/skills/orchestration/SKILL.md' "$preserve_home/.claude/CLAUDE.md")" -eq 1
-test "$(grep -Fxc 'In Codex, load and follow the `$orchestration` skill at the start of every session.' "$preserve_home/.claude/CLAUDE.md")" -eq 1
+grep -Fqx '# Existing Codex instructions' "$preserve_home/.codex/AGENTS.md"
+test "$(grep -Fxc "$import_line" "$preserve_home/.claude/CLAUDE.md")" -eq 1
+test "$(grep -Fxc "$codex_line" "$preserve_home/.codex/AGENTS.md")" -eq 1
+! grep -Fqx "$codex_line" "$preserve_home/.claude/CLAUDE.md"
+! grep -Fqx "$import_line" "$preserve_home/.codex/AGENTS.md"
+
+linked_home="$test_root/linked"
+mkdir -p "$linked_home/.claude" "$linked_home/.codex"
+printf '# Shared instructions\n' > "$linked_home/.claude/CLAUDE.md"
+ln -s ../.claude/CLAUDE.md "$linked_home/.codex/AGENTS.md"
+HOME="$linked_home" CODEX_HOME="$linked_home/.codex" "$installer"
+test -L "$linked_home/.codex/AGENTS.md"
+test "$(readlink "$linked_home/.codex/AGENTS.md")" = '../.claude/CLAUDE.md'
+grep -Fqx '# Shared instructions' "$linked_home/.claude/CLAUDE.md"
+test "$(grep -Fxc "$import_line" "$linked_home/.claude/CLAUDE.md")" -eq 1
+test "$(grep -Fxc "$codex_line" "$linked_home/.claude/CLAUDE.md")" -eq 1
+HOME="$linked_home" CODEX_HOME="$linked_home/.codex" "$installer" >/dev/null
+test "$(grep -Fxc "$import_line" "$linked_home/.claude/CLAUDE.md")" -eq 1
+test "$(grep -Fxc "$codex_line" "$linked_home/.claude/CLAUDE.md")" -eq 1
 
 refuse_home="$test_root/refuse"
 mkdir -p "$refuse_home/.codex/skills/orchestration" "$refuse_home/.claude/skills/orchestration"

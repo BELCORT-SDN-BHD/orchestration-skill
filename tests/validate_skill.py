@@ -58,7 +58,7 @@ openai_yaml = (skill / "agents" / "openai.yaml").read_text(encoding="utf-8")
 if "$orchestration" not in openai_yaml:
     raise SystemExit("agents/openai.yaml must invoke $orchestration")
 
-if (skill / "VERSION").read_text(encoding="utf-8").strip() != "4.0.0":
-    raise SystemExit("VERSION must be 4.0.0")
+if (skill / "VERSION").read_text(encoding="utf-8").strip() != "4.0.1":
+    raise SystemExit("VERSION must be 4.0.1")
 
 print("SKILL_VALIDATION=pass")

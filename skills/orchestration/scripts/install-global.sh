@@ -58,31 +58,34 @@ install_target "${CODEX_HOME:-$HOME/.codex}/skills/orchestration" codex
 install_target "$HOME/.claude/skills/orchestration" claude
 
 claude_md="$HOME/.claude/CLAUDE.md"
+codex_agents="${CODEX_HOME:-$HOME/.codex}/AGENTS.md"
 import_line='@~/.claude/skills/orchestration/SKILL.md'
 codex_line='In Codex, load and follow the `$orchestration` skill at the start of every session.'
-mkdir -p "$(dirname "$claude_md")"
-touch "$claude_md"
 
 ensure_line() {
-  line="$1"
-  if grep -Fqx "$line" "$claude_md"; then
+  file="$1"
+  line="$2"
+  mkdir -p "$(dirname "$file")"
+  touch "$file"
+
+  if grep -Fqx "$line" "$file"; then
     printf 'ALREADY_PRESENT=%s\n' "$line"
   else
-    if [ -s "$claude_md" ]; then
-      printf '\n' >> "$claude_md"
+    if [ -s "$file" ]; then
+      printf '\n' >> "$file"
     fi
-    printf '%s\n' "$line" >> "$claude_md"
+    printf '%s\n' "$line" >> "$file"
     printf 'ADDED=%s\n' "$line"
   fi
 }
 
-ensure_line "$import_line"
-ensure_line "$codex_line"
+ensure_line "$claude_md" "$import_line"
+ensure_line "$codex_agents" "$codex_line"
 
 test -f "${CODEX_HOME:-$HOME/.codex}/skills/orchestration/SKILL.md"
 test -f "$HOME/.claude/skills/orchestration/SKILL.md"
 grep -Fqx "$import_line" "$claude_md"
-grep -Fqx "$codex_line" "$claude_md"
+grep -Fqx "$codex_line" "$codex_agents"
 
 printf 'GLOBAL_ORCHESTRATION_POLICY=ready\n'
 printf 'Start a fresh host session before first use.\n'
