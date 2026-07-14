@@ -53,26 +53,38 @@ Worker effort stays at the table default. Raise effort only after a failed bound
 Inside Claude Code, use native subagents for Claude-family workers with the required model, effort, `maxTurns`, and worktree isolation. Inside Codex, use native collaboration for OpenAI-family workers when the runtime exposes a suitable lane. Shell out only for the other provider or when native lane selection is unavailable.
 
 ```bash
+# The work order's BUDGET is enforced as wall clock, not prose.
+BUDGET_SECONDS=1800  # set from the work order at dispatch
+
 # OpenAI read-only worker
-codex exec --ignore-user-config --skip-git-repo-check --sandbox read-only \
+timeout --signal=INT --kill-after=60 "$BUDGET_SECONDS" \
+  codex exec --ignore-user-config --skip-git-repo-check --sandbox read-only \
   -m gpt-5.6-terra -c model_reasoning_effort=high --json \
-  -o worker-out.md - < work-order.md
+  -o worker-out.md - < work-order.md > worker-events.jsonl 2>&1
 
 # OpenAI implementation worker
-codex exec --ignore-user-config --skip-git-repo-check --sandbox workspace-write \
+timeout --signal=INT --kill-after=60 "$BUDGET_SECONDS" \
+  codex exec --ignore-user-config --skip-git-repo-check --sandbox workspace-write \
   -m gpt-5.6-terra -c model_reasoning_effort=high --json \
-  -o worker-out.md - < work-order.md
+  -o worker-out.md - < work-order.md > worker-events.jsonl 2>&1
 
-# Claude read-only worker
-claude -p --model sonnet --effort high --permission-mode dontAsk \
+# Claude read-only worker (hermetic; read-only is enforced, not assumed)
+timeout --signal=INT --kill-after=60 "$BUDGET_SECONDS" \
+  claude -p --model sonnet --effort high --permission-mode dontAsk \
+  --strict-mcp-config --settings '{"disableAllHooks":true}' \
+  --disallowed-tools Write Edit NotebookEdit Bash \
   --disable-slash-commands --output-format json \
   < work-order.md > worker-out.json
 
-# Claude implementation worker
-claude -p --model sonnet --effort high --permission-mode acceptEdits \
+# Claude implementation worker (hermetic)
+timeout --signal=INT --kill-after=60 "$BUDGET_SECONDS" \
+  claude -p --model sonnet --effort high --permission-mode acceptEdits \
+  --strict-mcp-config --settings '{"disableAllHooks":true}' \
   --disable-slash-commands --output-format json \
   < work-order.md > worker-out.json
 ```
+
+The hermeticity flags on the claude patterns are mandatory: without `--strict-mcp-config` and `--settings '{"disableAllHooks":true}'` the worker loads the user's full MCP-server and hook stack, and `--permission-mode dontAsk` alone does not make a worker read-only — tools pre-allowed by user or project settings still execute, so the read-only lane also carries `--disallowed-tools`. The orchestrator reads results from the output files — `worker-out.md` for codex, `worker-out.json` for claude (result text in `.result`, failure when `.is_error` is true) — never from the raw event stream. A nonzero exit (124, or 137 after the hard kill, = budget exceeded), or a missing or empty output file, is a lane failure. The `timeout` wrapper is GNU coreutils, which stock macOS lacks (`brew install coreutils`; plain `timeout` needs gnubin on PATH, otherwise use `gtimeout`) — preflight reports `TIMEOUT_AVAILABLE`, and exit 127 means this prerequisite is missing, not that the worker failed.
 
 Match permissions to the work order. Never silently enable API-key billing or usage-credit top-ups.
 

@@ -63,13 +63,13 @@ test "$missing_runtime_status" -eq 2
 test "$unsupported_runtime_status" -eq 2
 
 codex_preflight=$(PATH="/usr/bin:/bin" "$preflight" codex)
-grep -q '^PREFLIGHT_VERSION=4$' <<<"$codex_preflight"
+grep -q '^PREFLIGHT_VERSION=5$' <<<"$codex_preflight"
 grep -q '^HOST_RUNTIME=codex$' <<<"$codex_preflight"
 grep -q '^ORCHESTRATOR_FAMILY=openai$' <<<"$codex_preflight"
 grep -q '^NOTE=host_profile_and_availability_evidence$' <<<"$codex_preflight"
 
 claude_preflight=$(PATH="/usr/bin:/bin" "$preflight" claude-code)
-grep -q '^PREFLIGHT_VERSION=4$' <<<"$claude_preflight"
+grep -q '^PREFLIGHT_VERSION=5$' <<<"$claude_preflight"
 grep -q '^HOST_RUNTIME=claude-code$' <<<"$claude_preflight"
 grep -q '^ORCHESTRATOR_FAMILY=claude$' <<<"$claude_preflight"
 
