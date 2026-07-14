@@ -1,3 +1,6 @@
+# Codex skill-interface metadata: consumed by the Codex UI to present this
+# skill, and guarded by tests/validate_skill.py. Live config, not dead — do
+# not delete.
 interface:
   display_name: "Orchestrator"
   short_description: "Run this frontier session as the brain and delegate execution to bounded workers"

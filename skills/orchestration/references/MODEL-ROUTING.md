@@ -2,6 +2,11 @@
 
 Model names live only in this file. Bindings were last reviewed on 2026-07-13 against Claude Code and Codex subscription workflows. Re-run `scripts/preflight.sh` after CLI upgrades. Optimize for accepted-task quality, wall time, quota/credit use, and runtime locality — not API list price alone.
 
+## Scheduled re-evaluations
+
+- **~2026-08-15** — re-check the GPT-5.6 worker-lane bindings against independent SWE/terminal data; the GA-week figures they rest on were provisional.
+- **2026-09-01** — re-run the Standard-lane cost math when Sonnet 5 introductory pricing ends, using tokenizer-adjusted effective token/quota cost, not list price.
+
 ## Orchestrators — the brain in the main loop
 
 The host runtime selects the profile automatically: Codex uses `sol-orchestrator`; Claude Code uses `fable-orchestrator`. The user never chooses a lane during initialization. The orchestrator plans, delegates, synthesizes, and decides; it should avoid long token-heavy execution loops that a worker can own.
@@ -86,7 +91,7 @@ timeout --signal=INT --kill-after=60 "$BUDGET_SECONDS" \
 
 The hermeticity flags on the claude patterns are mandatory: without `--strict-mcp-config` and `--settings '{"disableAllHooks":true}'` the worker loads the user's full MCP-server and hook stack, and `--permission-mode dontAsk` alone does not make a worker read-only — tools pre-allowed by user or project settings still execute, so the read-only lane also carries `--disallowed-tools`. The orchestrator reads results from the output files — `worker-out.md` for codex, `worker-out.json` for claude (result text in `.result`, failure when `.is_error` is true) — never from the raw event stream. A nonzero exit (124, or 137 after the hard kill, = budget exceeded), or a missing or empty output file, is a lane failure. The `timeout` wrapper is GNU coreutils, which stock macOS lacks (`brew install coreutils`; plain `timeout` needs gnubin on PATH, otherwise use `gtimeout`) — preflight reports `TIMEOUT_AVAILABLE`, and exit 127 means this prerequisite is missing, not that the worker failed.
 
-Match permissions to the work order. Never silently enable API-key billing or usage-credit top-ups.
+The claude examples use the `sonnet` alias intentionally so the lane tracks the current Sonnet generation; re-review the binding whenever the alias retargets. Match permissions to the work order. Never silently enable API-key billing or usage-credit top-ups.
 
 ## Exceptional cross-family review
 

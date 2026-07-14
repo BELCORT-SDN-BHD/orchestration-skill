@@ -76,8 +76,12 @@ for legacy in (
 binding_files = {
     skill / "references" / "MODEL-ROUTING.md",
 }
+# Capitalized-only for names that are common English substrings (Sol, Luna,
+# Terra, Fable); case-insensitive for the ones that are not, so a lowercase
+# alias leak such as `--model sonnet` is caught too.
 model_name = re.compile(
-    r"\b(Fable|Opus|Sonnet|Haiku|Terra|Luna|Sol|GPT-5[.\d]*|gpt-5[.\w-]*"
+    r"\b(Fable|Terra|Luna|Sol|GPT-5[.\d]*|gpt-5[.\w-]*"
+    r"|[Oo]pus|[Ss]onnet|[Hh]aiku"
     r"|claude-(?:fable|opus|sonnet|haiku)[\w.-]*)\b"
 )
 for path in sorted(root.rglob("*")):
