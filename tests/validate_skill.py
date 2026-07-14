@@ -58,7 +58,16 @@ openai_yaml = (skill / "agents" / "openai.yaml").read_text(encoding="utf-8")
 if "$orchestration" not in openai_yaml:
     raise SystemExit("agents/openai.yaml must invoke $orchestration")
 
-if (skill / "VERSION").read_text(encoding="utf-8").strip() != "4.0.1":
-    raise SystemExit("VERSION must be 4.0.1")
+readme = (root / "README.md").read_text(encoding="utf-8")
+agents = (root / "AGENTS.md").read_text(encoding="utf-8")
+if "Agent install contract" not in readme or "Do not stop" not in readme:
+    raise SystemExit("README.md must define the URL handoff install contract")
+if "Agent install contract" not in agents or "GLOBAL_ORCHESTRATION_POLICY=ready" not in agents:
+    raise SystemExit("AGENTS.md must require complete verified installation")
+if (root / "CLAUDE.md").read_text(encoding="utf-8").strip() != "@AGENTS.md":
+    raise SystemExit("CLAUDE.md must import the canonical AGENTS.md contract")
+
+if (skill / "VERSION").read_text(encoding="utf-8").strip() != "4.0.2":
+    raise SystemExit("VERSION must be 4.0.2")
 
 print("SKILL_VALIDATION=pass")
