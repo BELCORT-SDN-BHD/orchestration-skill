@@ -21,7 +21,7 @@ case "$1" in
   *) usage ;;
 esac
 
-printf 'PREFLIGHT_VERSION=5\n'
+printf 'PREFLIGHT_VERSION=6\n'
 printf 'HOST_RUNTIME=%s\n' "$host_runtime"
 printf 'ORCHESTRATOR_FAMILY=%s\n' "$orchestrator_family"
 
@@ -42,6 +42,12 @@ if command -v claude >/dev/null 2>&1; then
     --strict-mcp-config --settings --disallowed-tools; do
     if ! printf '%s' "$claude_help" | grep -q -- "$flag"; then
       printf 'CLAUDE_MISSING_FLAG=%s\n' "$flag"
+      claude_ok=no
+    fi
+  done
+  for choice in dontAsk acceptEdits; do
+    if ! printf '%s' "$claude_help" | grep -q -- "$choice"; then
+      printf 'CLAUDE_MISSING_PERMISSION_MODE=%s\n' "$choice"
       claude_ok=no
     fi
   done
@@ -69,6 +75,19 @@ if command -v timeout >/dev/null 2>&1; then
   printf 'TIMEOUT_AVAILABLE=yes\n'
 else
   printf 'TIMEOUT_AVAILABLE=no\n'
+fi
+
+# Billing-mode evidence: a paid-API key in the environment can silently divert a
+# subscription lane to metered billing, which the hard gates forbid doing silently.
+if [ -n "${ANTHROPIC_API_KEY:-}" ]; then
+  printf 'CLAUDE_BILLING=api-key-env-present\n'
+else
+  printf 'CLAUDE_BILLING=subscription-or-oauth\n'
+fi
+if [ -n "${OPENAI_API_KEY:-}" ]; then
+  printf 'OPENAI_BILLING=api-key-env-present\n'
+else
+  printf 'OPENAI_BILLING=subscription-or-oauth\n'
 fi
 
 printf 'NOTE=host_profile_and_availability_evidence\n'

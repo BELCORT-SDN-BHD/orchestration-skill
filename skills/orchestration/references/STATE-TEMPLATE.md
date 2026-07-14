@@ -25,7 +25,7 @@
 - Unknown:
 
 ## Active work
-- Worker / lane / scope / branch or worktree / acceptance / last evidence:
+- Worker / lane / scope / branch or worktree / acceptance / attempts-and-escalations / last evidence:
 
 ## Exceptional cross-family reviews
 - Decision / reviewer lane / evidence path / outcome:
@@ -36,4 +36,4 @@
 3. Resume only from current evidence.
 ```
 
-Do not put secrets, credentials, full prompts, or large transcripts in the state file. Store bulky proof outside the repo and record only durable paths plus hashes.
+Write this to the canonical state path — `.orchestrator/STATE.md` at the git root, git-excluded via `.git/info/exclude` (a fixed path outside the working tree for non-git work) — so recovery can find it. Do not put secrets, credentials, full prompts, or large transcripts in the state file. Store bulky proof outside the repo and record only durable paths plus hashes.
