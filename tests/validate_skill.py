@@ -67,7 +67,15 @@ if "Agent install contract" not in agents or "GLOBAL_ORCHESTRATION_POLICY=ready"
 if (root / "CLAUDE.md").read_text(encoding="utf-8").strip() != "@AGENTS.md":
     raise SystemExit("CLAUDE.md must import the canonical AGENTS.md contract")
 
-if (skill / "VERSION").read_text(encoding="utf-8").strip() != "4.0.2":
-    raise SystemExit("VERSION must be 4.0.2")
+updater = skill / "scripts" / "update-global.sh"
+if not updater.is_file():
+    raise SystemExit("automatic updater is missing")
+if "AUTO_UPDATE=ready" not in readme:
+    raise SystemExit("README.md must require verified automatic updates")
+if "AUTO_UPDATE=ready" not in agents:
+    raise SystemExit("AGENTS.md must require complete updater installation")
+
+if (skill / "VERSION").read_text(encoding="utf-8").strip() != "4.1.0":
+    raise SystemExit("VERSION must be 4.1.0")
 
 print("SKILL_VALIDATION=pass")
