@@ -1,48 +1,36 @@
 # Orchestration Skill
 
-A cross-runtime global skill that initializes the invoking Claude Code or Codex frontier session as the **orchestrator**. The orchestrator stays in the main loop to plan, judge, delegate, synthesize, and verify; token-heavy execution routes to bounded workers across the two supported model families.
+A minimal, always-on orchestrator policy for Claude Code and Codex.
 
-The division of labor:
+The current main model owns high-level judgment. Workers gather information,
+execute, test, verify, and return concise evidence. Claude Code may route heavy
+implementation to the official Codex plugin; Codex uses native workers.
 
-- **Orchestrator (the brain)** — the invoking frontier session. It owns planning, architecture, scope, routing, synthesis, verification, final judgment, reports, and recoverable state.
-- **Workers (the hands)** — bounded execution sessions chosen by task shape and runtime locality. They investigate, implement, test, and return machine evidence.
-- **User** — owns irreversible and external actions.
-
-There is no routine approval layer between the orchestrator and workers. A fresh cross-family frontier review is exceptional: high-consequence work, unresolved conflicting evidence, or an explicit user request.
-
-The skill grants no merge, deploy, spend, credential, production, or external-write authority. Project rules always override it.
-
-## Recommended installation: clone once, link both runtimes
+## Install
 
 ```bash
 gh repo clone BELCORT-SDN-BHD/orchestration-skill ~/.local/share/orchestration-skill
 bash ~/.local/share/orchestration-skill/skills/orchestration/scripts/install-global.sh --backup-existing
 ```
 
-Start a new session after installation, then invoke `$orchestration` in Codex or `/orchestration` in Claude Code. The host selects the orchestrator profile automatically: Codex uses the OpenAI profile and Claude Code uses the Claude profile.
+The installer:
 
-Both global skill paths point to the same Git clone:
+- links the skill into `~/.claude/skills/orchestration` and
+  `${CODEX_HOME:-$HOME/.codex}/skills/orchestration`;
+- adds `@~/.claude/skills/orchestration/SKILL.md` to
+  `~/.claude/CLAUDE.md` exactly once;
+- adds one Codex-only instruction to load `$orchestration`, because Codex does
+  not expand Claude Code `@` imports;
+- preserves any existing skill before replacing it when
+  `--backup-existing` is supplied.
 
-- `~/.codex/skills/orchestration`
-- `~/.claude/skills/orchestration`
+If `~/.codex/AGENTS.md` points to `~/.claude/CLAUDE.md`, Claude imports the
+policy directly and Codex receives the instruction to load the same skill
+through its global skill catalog. Start a fresh session after installation.
 
-Backups of any pre-existing skill go to `~/.local/share/orchestration-skill-backups/` — never inside the skills directories, where runtimes would index them as a second stale skill.
-
-Update every runtime with one command:
-
-```bash
-git -C ~/.local/share/orchestration-skill pull --ff-only
-```
-
-## Local verification
+## Verify
 
 ```bash
 python3 tests/validate_skill.py
 bash tests/smoke.sh
 ```
-
-The smoke suite covers clean installation, idempotent reruns, refusal to overwrite existing skills, out-of-tree backups, migration of stale in-tree backups, and script syntax.
-
-## What initialization means
-
-The invoking session resolves project law and ground truth, derives its orchestrator profile from the host runtime, and selects the smallest capable workers for execution. Normal work uses one worker; parallel fanout is reserved for independent subtasks or context isolation. High-consequence external actions still return to the user.
