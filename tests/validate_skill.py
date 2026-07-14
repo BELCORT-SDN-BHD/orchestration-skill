@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 from pathlib import Path
-import re
 
 root = Path(__file__).resolve().parents[1]
 skill = root / "skills" / "orchestration"
-text = (skill / "SKILL.md").read_text(encoding="utf-8")
+skill_file = skill / "SKILL.md"
+text = skill_file.read_text(encoding="utf-8")
 
 if not text.startswith("---\n"):
     raise SystemExit("SKILL.md must begin with YAML frontmatter")
@@ -19,84 +19,46 @@ for line in parts[1].splitlines():
     if separator:
         frontmatter[key.strip()] = value.strip()
 
-if not {"name", "description"} <= set(frontmatter):
-    raise SystemExit("frontmatter must contain name and description")
-if frontmatter["name"] != "orchestration":
+if frontmatter.get("name") != "orchestration":
     raise SystemExit("skill name must be orchestration")
-if "$orchestration" not in frontmatter["description"]:
-    raise SystemExit("description must advertise explicit Codex invocation")
-if "/orchestration" not in frontmatter["description"]:
-    raise SystemExit("description must advertise explicit Claude invocation")
-if len(frontmatter["description"]) > 500:
-    raise SystemExit("description over 500 chars — keep it to triggering conditions")
-for banned in ("Fable", "Sol", "GPT"):
-    if banned in frontmatter["description"]:
-        raise SystemExit(f"description must not hardcode model names ({banned}); bindings live in MODEL-ROUTING.md")
-if "TODO" in text:
-    raise SystemExit("skill contains unresolved TODO")
+if "$orchestration" not in frontmatter.get("description", ""):
+    raise SystemExit("description must advertise Codex invocation")
+if "/orchestration" not in frontmatter.get("description", ""):
+    raise SystemExit("description must advertise Claude Code invocation")
+if frontmatter.get("disable-model-invocation") != "true":
+    raise SystemExit("global import must prevent duplicate Claude auto-invocation")
 
-for relative in sorted(set(re.findall(r"(?:references|scripts)/[A-Za-z0-9._-]+", text))):
-    if not (skill / relative).is_file():
-        raise SystemExit(f"missing referenced resource: {relative}")
+body = parts[2].strip()
+required = (
+    "In every session, the current main model is the orchestrator.",
+    "All high-level judgment belongs to the orchestrator",
+    "Everything else goes to workers",
+    "always choose the available worker model best suited",
+    "codex:codex-rescue",
+    "--model gpt-5.6-sol --effort xhigh",
+    "In Codex, use the best-suited native Codex worker.",
+)
+for phrase in required:
+    if phrase not in body:
+        raise SystemExit(f"SKILL.md missing required policy: {phrase}")
+
+if len(body.split()) > 260:
+    raise SystemExit("orchestrator policy exceeds 260 words")
+
+legacy = (
+    skill / "references" / "MODEL-ROUTING.md",
+    skill / "references" / "STATE-TEMPLATE.md",
+    skill / "scripts" / "preflight.sh",
+)
+for path in legacy:
+    if path.exists():
+        raise SystemExit(f"legacy orchestration artifact remains: {path.relative_to(root)}")
 
 openai_yaml = (skill / "agents" / "openai.yaml").read_text(encoding="utf-8")
 if "$orchestration" not in openai_yaml:
-    raise SystemExit("agents/openai.yaml default prompt must invoke $orchestration")
+    raise SystemExit("agents/openai.yaml must invoke $orchestration")
 
-required_phrases = (
-    "Orchestrator (this session, the brain)",
-    "There is no separate routine decision layer",
-    "Delegate nontrivial investigation",
-    "Infer the orchestrator profile from the host runtime",
-    "references/MODEL-ROUTING.md",
-)
-for phrase in required_phrases:
-    if phrase not in text:
-        raise SystemExit(f"SKILL.md missing v3 invariant: {phrase}")
-
-for banned in (
-    "every judgment call",
-    "advisor-gated",
-    "consult the advisor",
-    "initial plan or decomposition of a program is itself a judgment call",
-    "orchestrator lane: unknown",
-):
-    if banned.lower() in text.lower():
-        raise SystemExit(f"SKILL.md retains removed approval layer: {banned}")
-
-for legacy in (
-    skill / "references" / "ADVISOR-PROTOCOL.md",
-    skill / "scripts" / "advisor.sh",
-):
-    if legacy.exists():
-        raise SystemExit(f"legacy advisor artifact must be removed: {legacy.relative_to(root)}")
-
-# Core invariant: model names live only in the binding files (tests may use
-# stub fixtures). Everything else must speak in lanes and roles.
-binding_files = {
-    skill / "references" / "MODEL-ROUTING.md",
-}
-# Capitalized-only for names that are common English substrings (Sol, Luna,
-# Terra, Fable); case-insensitive for the ones that are not, so a lowercase
-# alias leak such as `--model sonnet` is caught too.
-model_name = re.compile(
-    r"\b(Fable|Terra|Luna|Sol|GPT-5[.\d]*|gpt-5[.\w-]*"
-    r"|[Oo]pus|[Ss]onnet|[Hh]aiku"
-    r"|claude-(?:fable|opus|sonnet|haiku)[\w.-]*)\b"
-)
-for path in sorted(root.rglob("*")):
-    if not path.is_file() or ".git" in path.parts or "tests" in path.parts:
-        continue
-    if path in binding_files:
-        continue
-    try:
-        content = path.read_text(encoding="utf-8")
-    except (UnicodeDecodeError, OSError):
-        continue
-    match = model_name.search(content)
-    if match:
-        raise SystemExit(
-            f"model name '{match.group(0)}' outside binding files: {path.relative_to(root)}"
-        )
+if (skill / "VERSION").read_text(encoding="utf-8").strip() != "4.0.0":
+    raise SystemExit("VERSION must be 4.0.0")
 
 print("SKILL_VALIDATION=pass")

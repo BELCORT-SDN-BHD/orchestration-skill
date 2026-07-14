@@ -11,9 +11,6 @@ fi
 
 skill_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)
 timestamp=$(date +%Y%m%d-%H%M%S)
-# Backups must live OUTSIDE the skills directories: Claude Code and Codex
-# index every directory containing a SKILL.md, so a sibling backup would be
-# loaded as a second, stale orchestration skill.
 backup_root="$HOME/.local/share/orchestration-skill-backups"
 
 resolve_target() {
@@ -60,23 +57,32 @@ install_target() {
 install_target "${CODEX_HOME:-$HOME/.codex}/skills/orchestration" codex
 install_target "$HOME/.claude/skills/orchestration" claude
 
+claude_md="$HOME/.claude/CLAUDE.md"
+import_line='@~/.claude/skills/orchestration/SKILL.md'
+codex_line='In Codex, load and follow the `$orchestration` skill at the start of every session.'
+mkdir -p "$(dirname "$claude_md")"
+touch "$claude_md"
+
+ensure_line() {
+  line="$1"
+  if grep -Fqx "$line" "$claude_md"; then
+    printf 'ALREADY_PRESENT=%s\n' "$line"
+  else
+    if [ -s "$claude_md" ]; then
+      printf '\n' >> "$claude_md"
+    fi
+    printf '%s\n' "$line" >> "$claude_md"
+    printf 'ADDED=%s\n' "$line"
+  fi
+}
+
+ensure_line "$import_line"
+ensure_line "$codex_line"
+
 test -f "${CODEX_HOME:-$HOME/.codex}/skills/orchestration/SKILL.md"
 test -f "$HOME/.claude/skills/orchestration/SKILL.md"
+grep -Fqx "$import_line" "$claude_md"
+grep -Fqx "$codex_line" "$claude_md"
 
-# Migrate any backups a previous installer version left inside the skills
-# directories, where they shadow the real skill.
-migrate_stale() {
-  runtime="$1"
-  for stale in "$2/orchestration.backup."*; do
-    [ -e "$stale" ] || continue
-    mkdir -p "$backup_root"
-    dest="$backup_root/${runtime}-$(basename "$stale")"
-    mv "$stale" "$dest"
-    printf 'MIGRATED_STALE_BACKUP=%s\n' "$dest"
-  done
-}
-migrate_stale codex "${CODEX_HOME:-$HOME/.codex}/skills"
-migrate_stale claude "$HOME/.claude/skills"
-
-printf 'GLOBAL_ORCHESTRATION_SKILL=ready\n'
-printf 'Restart the host or start a new session before first use.\n'
+printf 'GLOBAL_ORCHESTRATION_POLICY=ready\n'
+printf 'Start a fresh host session before first use.\n'

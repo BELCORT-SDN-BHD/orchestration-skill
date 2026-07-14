@@ -1,7 +1,5 @@
-# Codex skill-interface metadata: consumed by the Codex UI to present this
-# skill, and guarded by tests/validate_skill.py. Live config, not dead — do
-# not delete.
+# Codex skill-interface metadata.
 interface:
   display_name: "Orchestrator"
-  short_description: "Run this frontier session as the brain and delegate execution to bounded workers"
-  default_prompt: "Use $orchestration to initialize this frontier session as the orchestrator. Make the plan and judgment calls here, route execution to the smallest capable workers, verify their evidence, and keep cross-family review exceptional."
+  short_description: "Keep judgment in the main session and delegate information gathering and execution"
+  default_prompt: "Use $orchestration to apply the universal orchestrator-worker split to this session."
