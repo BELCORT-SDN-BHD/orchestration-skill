@@ -21,7 +21,7 @@ case "$1" in
   *) usage ;;
 esac
 
-printf 'PREFLIGHT_VERSION=4\n'
+printf 'PREFLIGHT_VERSION=5\n'
 printf 'HOST_RUNTIME=%s\n' "$host_runtime"
 printf 'ORCHESTRATOR_FAMILY=%s\n' "$orchestrator_family"
 
@@ -38,7 +38,8 @@ if command -v claude >/dev/null 2>&1; then
   claude_help=$(claude --help 2>/dev/null)
   printf 'CLAUDE_VERSION=%s\n' "$(claude --version 2>/dev/null | head -1)"
   claude_ok=yes
-  for flag in --model --effort --permission-mode --disable-slash-commands --output-format; do
+  for flag in --model --effort --permission-mode --disable-slash-commands --output-format \
+    --strict-mcp-config --settings --disallowed-tools; do
     if ! printf '%s' "$claude_help" | grep -q -- "$flag"; then
       printf 'CLAUDE_MISSING_FLAG=%s\n' "$flag"
       claude_ok=no
@@ -53,7 +54,7 @@ if command -v codex >/dev/null 2>&1; then
   codex_help=$(codex exec --help 2>/dev/null)
   printf 'CODEX_VERSION=%s\n' "$(codex --version 2>/dev/null | head -1)"
   openai_ok=yes
-  for flag in --model --sandbox --json --ignore-user-config --skip-git-repo-check --output-last-message; do
+  for flag in --model --sandbox --json --ignore-user-config --skip-git-repo-check --output-last-message --config; do
     if ! printf '%s' "$codex_help" | grep -q -- "$flag"; then
       printf 'CODEX_MISSING_FLAG=%s\n' "$flag"
       openai_ok=no
@@ -62,6 +63,12 @@ if command -v codex >/dev/null 2>&1; then
   printf 'OPENAI_LANES=%s\n' "$openai_ok"
 else
   printf 'OPENAI_LANES=unavailable\n'
+fi
+
+if command -v timeout >/dev/null 2>&1; then
+  printf 'TIMEOUT_AVAILABLE=yes\n'
+else
+  printf 'TIMEOUT_AVAILABLE=no\n'
 fi
 
 printf 'NOTE=host_profile_and_availability_evidence\n'
