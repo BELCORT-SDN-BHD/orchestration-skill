@@ -33,3 +33,17 @@ In Codex, use the best-suited native Codex worker.
 
 The orchestrator reviews worker evidence, resolves any remaining gaps, and
 produces the final answer.
+
+## Ultracode / Workflow model routing (Claude Code)
+
+In Workflow scripts (ultracode), agents never inherit the session model;
+Fable is the orchestrator only. Set `opts.model` and `opts.effort` on every
+`agent()` call — this overrides the Workflow tool's advice to omit them:
+
+- Exploration, search, mechanical stages: `{model: 'sonnet', effort: 'low'}`
+  (`'haiku'` for trivial sweeps).
+- Implementation: `{agentType: 'codex:codex-rescue'}`, else
+  `{model: 'sonnet', effort: 'high'}`.
+- Verify / judge: `{model: 'sonnet', effort: 'xhigh'}`.
+- Never `model: 'fable'` for any agent, including Agent-tool subagents;
+  pass `model` explicitly there too.
