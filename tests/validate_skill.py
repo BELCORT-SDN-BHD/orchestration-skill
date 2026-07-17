@@ -30,20 +30,31 @@ if frontmatter.get("disable-model-invocation") != "true":
 
 body = parts[2].strip()
 required = (
-    "In every session, the current main model is the orchestrator.",
+    "In every top-level session, the current main model is the orchestrator.",
     "All high-level judgment belongs to the orchestrator",
     "Everything else goes to workers",
     "always choose the available worker model best suited",
     "codex:codex-rescue",
     "--model gpt-5.6-sol --effort xhigh",
-    "In Codex, use the best-suited native Codex worker.",
+    "In Codex, use the best-suited worker via `codex exec`.",
+    "## Dispatch sizing",
+    "Use the smallest structure that covers the task",
+    "a user invocation of this skill is the explicit opt-in;",
+    "Never `model: 'fable'` for any agent.",
+    "Worker prompts must identify the recipient as a worker,",
+    "Workers never spawn workers — only the top-level session orchestrates.",
+    "only when the user directly asks for an orchestrated fleet.",
+    "orchestrator-rate tokens will buy and explicitly approves.",
+    "joined by one `wait`.",
+    "on the top-level Codex sandbox,",
+    "set `-m` / `-c model_reasoning_effort=...` per worker",
 )
 for phrase in required:
     if phrase not in body:
         raise SystemExit(f"SKILL.md missing required policy: {phrase}")
 
-if len(body.split()) > 260:
-    raise SystemExit("orchestrator policy exceeds 260 words")
+if len(body.split()) > 540:
+    raise SystemExit("orchestrator policy exceeds 540 words")
 
 legacy = (
     skill / "references" / "MODEL-ROUTING.md",
@@ -67,7 +78,7 @@ if "Agent install contract" not in agents or "GLOBAL_ORCHESTRATION_POLICY=ready"
 if (root / "CLAUDE.md").read_text(encoding="utf-8").strip() != "@AGENTS.md":
     raise SystemExit("CLAUDE.md must import the canonical AGENTS.md contract")
 
-if (skill / "VERSION").read_text(encoding="utf-8").strip() != "4.0.2":
-    raise SystemExit("VERSION must be 4.0.2")
+if (skill / "VERSION").read_text(encoding="utf-8").strip() != "4.1.0":
+    raise SystemExit("VERSION must be 4.1.0")
 
 print("SKILL_VALIDATION=pass")

@@ -9,11 +9,38 @@
 One prompt that makes the current main model the orchestrator in every
 installed Claude Code and Codex session.
 
-- The orchestrator reasons, plans, decides, synthesizes, and communicates.
-- Workers gather information, implement, debug, test, and verify.
-- Claude Code sends heavy code work to `codex:codex-rescue` using
-  `gpt-5.6-sol` with `xhigh` effort.
-- Codex uses the best-suited native Codex worker.
+## What
+
+A single policy file (`skills/orchestration/SKILL.md`) linked into both
+hosts. Every session loads it automatically; `/orchestration` (Claude Code)
+or `$orchestration` (Codex) re-applies it on demand.
+
+## Why
+
+The main model is the most expensive one in the session. It should spend its
+tokens on judgment — understanding intent, planning, decomposing, reviewing,
+answering — while cheaper, right-sized workers do the grinding: research,
+exploration, implementation, testing. Most tokens then land at worker rates.
+
+## How
+
+1. The orchestrator sizes every dispatch with the smallest structure that
+   covers the task: solo → one worker → parallel fan-out (2–8 concurrent
+   workers) → orchestrated fleet (Claude Code: the Workflow tool; Codex:
+   batched `codex exec … &` jobs joined by `wait`).
+2. Every worker is routed explicitly, never left on the expensive session
+   model. Claude Code: Sonnet/Haiku for exploration and verification,
+   `codex:codex-rescue` (gpt-5.6-sol, xhigh) for heavy implementation,
+   never Fable. Codex: `-m` / `-c model_reasoning_effort=...` per worker.
+3. Worker prompts are self-contained, name the recipient as a worker, and
+   forbid further delegation — only the top-level session orchestrates,
+   so fleets cannot recurse.
+4. Consent gates: a fleet runs only when the user directly asks for one
+   (or, in Claude Code, invoked this skill); a task skill that wants the
+   main model to author content itself must state what the tokens buy and
+   get an explicit OK.
+5. The orchestrator reviews worker evidence, resolves gaps, and produces
+   the final answer.
 
 ## Install
 
