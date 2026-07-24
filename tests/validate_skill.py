@@ -66,6 +66,7 @@ required = (
     "disableAllHooks",
     "--disallowed-tools Write Edit NotebookEdit Bash WebFetch WebSearch Task",
     "read-only, no edits",
+    "dispatch still follows this routing table",
     "last reviewed 2026-07-25",
     "2026-08-15",
     "2026-09-01",
@@ -74,8 +75,8 @@ for phrase in required:
     if phrase not in body:
         raise SystemExit(f"SKILL.md missing required policy: {phrase}")
 
-if len(body.split()) > 850:
-    raise SystemExit("orchestrator policy exceeds 850 words")
+if len(body.split()) > 900:
+    raise SystemExit("orchestrator policy exceeds 900 words")
 
 legacy = (
     skill / "references" / "MODEL-ROUTING.md",
@@ -106,7 +107,7 @@ for token in ("opus", "haiku", "gpt-5.6-sol", "gpt-5.6-luna", "codex:codex-rescu
 if "update the matching literal strings" not in agents:
     raise SystemExit("AGENTS.md must require test/README/VERSION sync on routing edits")
 
-if (skill / "VERSION").read_text(encoding="utf-8").strip() != "5.0.0":
-    raise SystemExit("VERSION must be 5.0.0")
+if (skill / "VERSION").read_text(encoding="utf-8").strip() != "5.1.0":
+    raise SystemExit("VERSION must be 5.1.0")
 
 print("SKILL_VALIDATION=pass")
