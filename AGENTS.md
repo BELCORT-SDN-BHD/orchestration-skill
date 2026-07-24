@@ -16,3 +16,4 @@ permission or environment blocker remains. A narrower user request wins.
 3. Changes to the runtime policy, installation behavior, or this governance file are founder-only. The author or material editor may not merge them.
 4. Before handoff, run `python3 tests/validate_skill.py` and `bash tests/smoke.sh`, then review the exact diff.
 5. Never add credentials, tokens, private transcripts, hidden reasoning, paid verification calls, or automatic external publication.
+6. Any edit to model names, effort levels, or routing in `skills/orchestration/SKILL.md` must, in the same PR, update the matching literal strings in `tests/validate_skill.py`, keep `README.md`'s routing summary in sync, and bump `skills/orchestration/VERSION`.

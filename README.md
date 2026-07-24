@@ -29,9 +29,13 @@ exploration, implementation, testing. Most tokens then land at worker rates.
    workers) → orchestrated fleet (Claude Code: the Workflow tool; Codex:
    batched `codex exec … &` jobs joined by `wait`).
 2. Every worker is routed explicitly, never left on the expensive session
-   model. Claude Code: Sonnet/Haiku for exploration and verification,
-   `codex:codex-rescue` (gpt-5.6-sol, xhigh) for heavy implementation,
-   never Fable. Codex: `-m` / `-c model_reasoning_effort=...` per worker.
+   model. Two tiers per host plus a cross-vendor judge, no middle tier:
+   thinking work goes to the strongest native worker (Claude Code: Opus;
+   Codex: gpt-5.6-sol), purely mechanical work to the cheapest (Haiku;
+   gpt-5.6-luna), and critical review, second opinions, and rescue cross
+   vendors — `codex:codex-rescue` from Claude Code, a hermetic read-only
+   `claude` worker from Codex. Never Fable. Full bindings and their review
+   dates live in `skills/orchestration/SKILL.md`.
 3. Worker prompts are self-contained, name the recipient as a worker, and
    forbid further delegation — only the top-level session orchestrates,
    so fleets cannot recurse.
