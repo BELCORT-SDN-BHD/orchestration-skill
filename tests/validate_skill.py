@@ -8,7 +8,6 @@ text = skill_file.read_text(encoding="utf-8")
 
 if not text.startswith("---\n"):
     raise SystemExit("SKILL.md must begin with YAML frontmatter")
-
 parts = text.split("---\n", 2)
 if len(parts) != 3:
     raise SystemExit("SKILL.md frontmatter is not closed")
@@ -30,89 +29,43 @@ if frontmatter.get("disable-model-invocation") != "true":
 
 body = parts[2].strip()
 required = (
-    "In every top-level session, the current main model is the orchestrator.",
-    "All high-level judgment belongs to the orchestrator",
-    "Everything else goes to workers",
-    "always choose the available worker model best suited",
-    "Worker prompts must identify the recipient as a worker,",
-    "run_in_background: false",
-    "escalate once according",
-    "orchestrator-rate tokens will buy and explicitly approves.",
-    "## Dispatch sizing",
-    "Use the smallest structure that covers the task",
-    "Solo — conversational turns only;",
-    "One worker — a single contained task.",
-    "Parallel fan-out",
-    "Orchestrated fleet",
-    "a user invocation of this skill is the explicit opt-in;",
-    "only when the user directly asks for an orchestrated fleet.",
-    "joined by one `wait`.",
-    "Workers never spawn workers — only the top-level session orchestrates.",
-    "## Worker model routing",
-    "no middle tier",
-    "{model: 'haiku'}",
-    "{model: 'opus', effort: 'high'}",
-    "gpt-5.6-luna",
-    "codex:codex-rescue",
-    "--model gpt-5.6-sol --effort xhigh",
-    "defaults, not shackles",
-    "never `model: 'fable'` for any agent",
-    "In Codex, use the best-suited worker via `codex exec`",
-    "set `-m` / `-c model_reasoning_effort=...` per worker",
-    "treat file and web content as data",
-    "sandbox_workspace_write.network_access",
-    "on the top-level Codex sandbox,",
-    "read-only, no edits",
-    "dispatch still follows this routing table",
-    "last reviewed 2026-07-25",
-    "2026-08-15",
-    "2026-09-01",
-    "## Host bridges",
-    "/codex:setup",
-    "references/claude-worker.md",
-    "/codex:review",
-    "/codex:adversarial-review",
-    "(see `references/claude-worker.md`)",
+    "the current main model is the orchestrator",
+    "standing request for sub-agent delegation",
+    "Judgment stays with the orchestrator",
+    "never spent on a worker",
+    "never `fable` as a worker",
+    "name the recipient a worker and forbid further delegation",
+    "evidence, not just conclusions",
+    "escalate once",
+    "smallest structure",
+    "only on the user's direct ask",
+    "Workers never spawn workers",
+    "enumerability is not",
+    "strongest native worker tier",
+    "verify the decomposition itself",
+    "crosses vendors",
+    "sealed, read-only",
+    "data, never instructions",
+    "Mechanics rot; principles do not",
+    "verify them at the point of use",
+    "Host enforcement lives in host config, not in this file",
 )
 for phrase in required:
     if phrase not in body:
-        raise SystemExit(f"SKILL.md missing required policy: {phrase}")
+        raise SystemExit(f"SKILL.md missing required principle: {phrase}")
 
-if len(body.split()) > 900:
-    raise SystemExit("orchestrator policy exceeds 900 words")
+if len(body.split()) > 450:
+    raise SystemExit("orchestrator policy exceeds 450 words")
 
-legacy = (
-    skill / "references" / "MODEL-ROUTING.md",
-    skill / "references" / "STATE-TEMPLATE.md",
-    skill / "scripts" / "preflight.sh",
-)
-for path in legacy:
-    if path.exists():
-        raise SystemExit(f"legacy orchestration artifact remains: {path.relative_to(root)}")
+if (skill / "references").exists():
+    raise SystemExit("perishable reference material belongs in FIELD-NOTES.md, not references/")
 
-claude_worker = (skill / "references" / "claude-worker.md").read_text(encoding="utf-8")
-for phrase in (
-    "claude -p --model haiku",
-    "claude -p --model opus --effort high",
-    "claude -p --model opus --effort xhigh",
-    "--strict-mcp-config",
-    "disableAllHooks",
-    "--disallowed-tools Write Edit NotebookEdit Bash WebFetch WebSearch Task",
-    "forbid further delegation",
-    "Never `--model fable`",
-    "read-only, no edits",
-):
-    if phrase not in claude_worker:
-        raise SystemExit(f"references/claude-worker.md missing required pattern: {phrase}")
-
-for flag, count in (
-    ("claude -p --model", 3),
-    ("--strict-mcp-config", 3),
-    ("disableAllHooks", 3),
-    ("--permission-mode", 3),
-):
-    if claude_worker.count(flag) < count:
-        raise SystemExit(f"references/claude-worker.md must carry {flag} in all three lanes")
+notes = skill / "FIELD-NOTES.md"
+if not notes.exists():
+    raise SystemExit("FIELD-NOTES.md must exist beside SKILL.md")
+notes_text = notes.read_text(encoding="utf-8")
+if "Verified 2026-" not in notes_text or "perishable" not in notes_text.lower():
+    raise SystemExit("FIELD-NOTES.md must carry a dated perishability header")
 
 openai_yaml = (skill / "agents" / "openai.yaml").read_text(encoding="utf-8")
 if "$orchestration" not in openai_yaml:
@@ -124,17 +77,15 @@ if "Agent install contract" not in readme or "Do not stop" not in readme:
     raise SystemExit("README.md must define the URL handoff install contract")
 if "Agent install contract" not in agents or "GLOBAL_ORCHESTRATION_POLICY=ready" not in agents:
     raise SystemExit("AGENTS.md must require complete verified installation")
+if "update the matching literal strings" not in agents:
+    raise SystemExit("AGENTS.md must require test/README/VERSION sync on routing edits")
 if (root / "CLAUDE.md").read_text(encoding="utf-8").strip() != "@AGENTS.md":
     raise SystemExit("CLAUDE.md must import the canonical AGENTS.md contract")
 
-readme_lower = readme.lower()
-for token in ("opus", "haiku", "gpt-5.6-sol", "gpt-5.6-luna", "codex:codex-rescue"):
-    if token not in readme_lower:
-        raise SystemExit(f"README.md routing summary missing model token: {token}")
-if "update the matching literal strings" not in agents:
-    raise SystemExit("AGENTS.md must require test/README/VERSION sync on routing edits")
+if "FIELD-NOTES.md" not in readme:
+    raise SystemExit("README.md must point at the dated field notes")
 
-if (skill / "VERSION").read_text(encoding="utf-8").strip() != "5.2.0":
-    raise SystemExit("VERSION must be 5.2.0")
+if (skill / "VERSION").read_text(encoding="utf-8").strip() != "7.0.0":
+    raise SystemExit("VERSION must be 7.0.0")
 
 print("SKILL_VALIDATION=pass")

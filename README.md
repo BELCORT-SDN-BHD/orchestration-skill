@@ -25,26 +25,19 @@ exploration, implementation, testing. Most tokens then land at worker rates.
 ## How
 
 1. The orchestrator sizes every dispatch with the smallest structure that
-   covers the task: solo → one worker → parallel fan-out (2–8 concurrent
-   workers) → orchestrated fleet (Claude Code: the Workflow tool; Codex:
-   batched `codex exec … &` jobs joined by `wait`).
-2. Every worker is routed explicitly, never left on the expensive session
-   model. Two tiers per host plus a cross-vendor judge, no middle tier:
-   thinking work goes to the strongest native worker (Claude Code: Opus;
-   Codex: gpt-5.6-sol), purely mechanical work to the cheapest (Haiku;
-   gpt-5.6-luna), and critical review, second opinions, and rescue cross
-   vendors — `codex:codex-rescue` from Claude Code, a hermetic read-only
-   `claude` worker from Codex. Never Fable. Full bindings and their review
-   dates live in `skills/orchestration/SKILL.md`; the Codex-side `claude -p`
-   worker patterns live in
-   `skills/orchestration/references/claude-worker.md`.
+   covers the task: solo → one worker → parallel fan-out for what you can
+   enumerate → orchestrated fleet only for what you cannot.
+2. Every worker is routed by task shape, not guessed difficulty:
+   discovery-shaped work to the strongest native worker tier, enumerable
+   coverage work one tier down with independent verification,
+   zero-judgment bulk to the cheapest tier, and critical review across
+   vendors. The policy names tiers, not models — current model bindings
+   are dated observations in `skills/orchestration/FIELD-NOTES.md`, never
+   policy.
 3. Worker prompts are self-contained, name the recipient as a worker, and
    forbid further delegation — only the top-level session orchestrates,
    so fleets cannot recurse.
-4. Consent gates: a fleet runs only when the user directly asks for one
-   (or, in Claude Code, invoked this skill); a task skill that wants the
-   main model to author content itself must state what the tokens buy and
-   get an explicit OK.
+4. Consent gate: a fleet runs only when the user directly asks for one.
 5. The orchestrator reviews worker evidence, resolves gaps, and produces
    the final answer.
 
