@@ -37,7 +37,10 @@ exploration, implementation, testing. Most tokens then land at worker rates.
 3. Worker prompts are self-contained, name the recipient as a worker, and
    forbid further delegation — only the top-level session orchestrates,
    so fleets cannot recurse.
-4. Consent gate: a fleet runs only when the user directly asks for one.
+4. Consent gates: a fleet runs only on the user's direct ask, and a
+   task skill that wants the orchestrator itself to do the work must
+   state what the orchestrator-rate tokens buy and get explicit
+   approval.
 5. The orchestrator reviews worker evidence, resolves gaps, and produces
    the final answer.
 

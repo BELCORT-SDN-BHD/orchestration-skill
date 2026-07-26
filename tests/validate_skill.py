@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+import re
+from datetime import date, timedelta
 from pathlib import Path
 
 root = Path(__file__).resolve().parents[1]
@@ -49,13 +51,22 @@ required = (
     "Mechanics rot; principles do not",
     "verify them at the point of use",
     "Host enforcement lives in host config, not in this file",
+    "Everything else goes to workers",
+    "no shared context",
+    "Synthesize only after every dispatch",
+    "goes one tier down, in parallel",
+    "verify the results with a stronger worker",
+    "Zero-judgment bulk goes to the cheapest tier",
+    "repo contents or secrets anywhere the user did not ask",
+    "orchestrator-rate tokens",
+    "orchestrator and strongest worker are the same model",
 )
 for phrase in required:
     if phrase not in body:
         raise SystemExit(f"SKILL.md missing required principle: {phrase}")
 
-if len(body.split()) > 450:
-    raise SystemExit("orchestrator policy exceeds 450 words")
+if len(body.split()) > 470:
+    raise SystemExit("orchestrator policy exceeds 470 words")
 
 if (skill / "references").exists():
     raise SystemExit("perishable reference material belongs in FIELD-NOTES.md, not references/")
@@ -64,8 +75,12 @@ notes = skill / "FIELD-NOTES.md"
 if not notes.exists():
     raise SystemExit("FIELD-NOTES.md must exist beside SKILL.md")
 notes_text = notes.read_text(encoding="utf-8")
-if "Verified 2026-" not in notes_text or "perishable" not in notes_text.lower():
+stamp = re.search(r"Verified (\d{4})-(\d{2})-(\d{2})", notes_text)
+if not stamp or "perishable" not in notes_text.lower():
     raise SystemExit("FIELD-NOTES.md must carry a dated perishability header")
+verified = date(int(stamp.group(1)), int(stamp.group(2)), int(stamp.group(3)))
+if date.today() - verified > timedelta(days=180):
+    raise SystemExit("field notes are stale (>180 days) — re-verify and re-date them")
 
 openai_yaml = (skill / "agents" / "openai.yaml").read_text(encoding="utf-8")
 if "$orchestration" not in openai_yaml:
