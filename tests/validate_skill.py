@@ -70,6 +70,9 @@ required = (
     "## Host bridges",
     "/codex:setup",
     "references/claude-worker.md",
+    "/codex:review",
+    "/codex:adversarial-review",
+    "(see `references/claude-worker.md`)",
 )
 for phrase in required:
     if phrase not in body:
@@ -101,6 +104,15 @@ for phrase in (
 ):
     if phrase not in claude_worker:
         raise SystemExit(f"references/claude-worker.md missing required pattern: {phrase}")
+
+for flag, count in (
+    ("claude -p --model", 3),
+    ("--strict-mcp-config", 3),
+    ("disableAllHooks", 3),
+    ("--permission-mode", 3),
+):
+    if claude_worker.count(flag) < count:
+        raise SystemExit(f"references/claude-worker.md must carry {flag} in all three lanes")
 
 openai_yaml = (skill / "agents" / "openai.yaml").read_text(encoding="utf-8")
 if "$orchestration" not in openai_yaml:

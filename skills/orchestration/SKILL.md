@@ -112,6 +112,6 @@ here. Entry points: `/codex:setup` (environment check), the
 `codex:codex-rescue` judge lane above, `/codex:review` and
 `/codex:adversarial-review`, and raw `codex exec` as the escape hatch.
 
-Codex side: dispatch Claude workers with the canonical `claude -p`
-patterns — mechanical, thinking, and judge (read-only enforced, not
-assumed) — in `references/claude-worker.md`.
+Codex side: when a dispatch crosses to Claude — the judge lane by
+default, other lanes only as declared deviations — use the canonical
+`claude -p` patterns in `references/claude-worker.md`.
