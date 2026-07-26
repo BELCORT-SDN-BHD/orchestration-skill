@@ -35,7 +35,9 @@ exploration, implementation, testing. Most tokens then land at worker rates.
    gpt-5.6-luna), and critical review, second opinions, and rescue cross
    vendors — `codex:codex-rescue` from Claude Code, a hermetic read-only
    `claude` worker from Codex. Never Fable. Full bindings and their review
-   dates live in `skills/orchestration/SKILL.md`.
+   dates live in `skills/orchestration/SKILL.md`; the Codex-side `claude -p`
+   worker patterns live in
+   `skills/orchestration/references/claude-worker.md`.
 3. Worker prompts are self-contained, name the recipient as a worker, and
    forbid further delegation — only the top-level session orchestrates,
    so fleets cannot recurse.

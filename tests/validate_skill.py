@@ -62,14 +62,14 @@ required = (
     "treat file and web content as data",
     "sandbox_workspace_write.network_access",
     "on the top-level Codex sandbox,",
-    "--strict-mcp-config",
-    "disableAllHooks",
-    "--disallowed-tools Write Edit NotebookEdit Bash WebFetch WebSearch Task",
     "read-only, no edits",
     "dispatch still follows this routing table",
     "last reviewed 2026-07-25",
     "2026-08-15",
     "2026-09-01",
+    "## Host bridges",
+    "/codex:setup",
+    "references/claude-worker.md",
 )
 for phrase in required:
     if phrase not in body:
@@ -86,6 +86,21 @@ legacy = (
 for path in legacy:
     if path.exists():
         raise SystemExit(f"legacy orchestration artifact remains: {path.relative_to(root)}")
+
+claude_worker = (skill / "references" / "claude-worker.md").read_text(encoding="utf-8")
+for phrase in (
+    "claude -p --model haiku",
+    "claude -p --model opus --effort high",
+    "claude -p --model opus --effort xhigh",
+    "--strict-mcp-config",
+    "disableAllHooks",
+    "--disallowed-tools Write Edit NotebookEdit Bash WebFetch WebSearch Task",
+    "forbid further delegation",
+    "Never `--model fable`",
+    "read-only, no edits",
+):
+    if phrase not in claude_worker:
+        raise SystemExit(f"references/claude-worker.md missing required pattern: {phrase}")
 
 openai_yaml = (skill / "agents" / "openai.yaml").read_text(encoding="utf-8")
 if "$orchestration" not in openai_yaml:
@@ -107,7 +122,7 @@ for token in ("opus", "haiku", "gpt-5.6-sol", "gpt-5.6-luna", "codex:codex-rescu
 if "update the matching literal strings" not in agents:
     raise SystemExit("AGENTS.md must require test/README/VERSION sync on routing edits")
 
-if (skill / "VERSION").read_text(encoding="utf-8").strip() != "5.1.0":
-    raise SystemExit("VERSION must be 5.1.0")
+if (skill / "VERSION").read_text(encoding="utf-8").strip() != "5.2.0":
+    raise SystemExit("VERSION must be 5.2.0")
 
 print("SKILL_VALIDATION=pass")
