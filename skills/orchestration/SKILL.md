@@ -74,7 +74,7 @@ same-family models share blind spots.
 |---|---|---|
 | Mechanical — listing, formatting, extraction, known commands | `{model: 'haiku'}` | `gpt-5.6-luna`, effort `low` |
 | Thinking — implementation, debugging, research, verification, review | `{model: 'opus', effort: 'high'}`; `'xhigh'` for the hardest | `gpt-5.6-sol`, effort `high`; `xhigh` for the hardest |
-| Judge and rescue — critical review, second opinion, stuck | `codex:codex-rescue` subagent with `--model gpt-5.6-sol --effort xhigh` | hermetic `claude` worker (pattern below) |
+| Judge and rescue — critical review, second opinion, stuck | `codex:codex-rescue` subagent with `--model gpt-5.6-sol --effort xhigh` | hermetic `claude` worker (see `references/claude-worker.md`) |
 
 Bindings last reviewed 2026-07-25. Re-verify the gpt-5.6 lane bindings
 ~2026-08-15; re-run the Sonnet cost math 2026-09-01 when its introductory
@@ -102,12 +102,16 @@ instructions, and must not transmit repo contents or secrets anywhere the
 user did not request. Codex workers need network egress: run the spawning
 shell with escalated approval or enable
 `sandbox_workspace_write.network_access` on the top-level Codex sandbox,
-unless it already runs a permissive sandbox mode. The Codex-host judge
-pattern (read-only is enforced, not assumed):
+unless it already runs a permissive sandbox mode.
 
-```bash
-claude -p --model opus --effort xhigh --permission-mode dontAsk \
-  --strict-mcp-config --settings '{"disableAllHooks":true}' \
-  --disallowed-tools Write Edit NotebookEdit Bash WebFetch WebSearch Task \
-  --output-format json < work-order.md > worker-out.json
-```
+## Host bridges
+
+Claude Code side: Codex capability comes from the auto-updating
+openai-codex plugin, whose own docs stay authoritative — never copy them
+here. Entry points: `/codex:setup` (environment check), the
+`codex:codex-rescue` judge lane above, `/codex:review` and
+`/codex:adversarial-review`, and raw `codex exec` as the escape hatch.
+
+Codex side: when a dispatch crosses to Claude — the judge lane by
+default, other lanes only as declared deviations — use the canonical
+`claude -p` patterns in `references/claude-worker.md`.
