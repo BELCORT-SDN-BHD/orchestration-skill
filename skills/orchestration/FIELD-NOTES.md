@@ -115,3 +115,8 @@ summarize away nuance silently; that failure never stalls.
   max_concurrent_threads_per_session = 8`; subagent model/effort
   defaults deliberately unset.
 - Codex CLI upgraded to 0.145.x via npm.
+
+## 2026-08-02 — never-fable-as-worker 被静默默认击穿一整天,已加机器闸
+- 事故:Claude Code 的 Agent 工具在省略 `model` 参数时**继承主会话型号**;主会话=Fable 5 → 全天所有 general-purpose worker 静默跑在 Fable 5 上,违反本 skill 的 never-fable 条款。Founder 当场抓出并令:worker 一律 Opus 5。
+- 修法(harness 执行,非仅指令):`~/.claude/settings.json` 新增 PreToolUse hook(matcher=Agent)——`model` 缺省或含 "fable" 一律 deny;`codex:*` 类型豁免(其 agent 定义自带 sonnet)。四例管口测试 + 存储后 round-trip 均验证。
+- 教训与本 skill 的「在调用点核验默认值」条款完全同构:默认值不是中立的,它会继承你最贵的东西。
