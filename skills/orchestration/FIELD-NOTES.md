@@ -4,6 +4,8 @@ Verified 2026-07-26 against local binaries, official docs, and vendor
 source. Everything here is perishable: when a note conflicts with the
 live system, the live system wins. Re-verify ~2026-08-15 (gpt-5.6
 lanes, Codex CLI) and 2026-09-01 (Sonnet introductory pricing ends).
+[2026-08-27: the 08-15 re-verify is OVERDUE and was not performed in
+the v7.1.0 pass — only the task-graph section below is fresh.]
 
 These notes record the safe patterns as of the verification date —
 guidance that expires, never policy; policy lives in SKILL.md.
@@ -141,48 +143,68 @@ primary sources). Backs the SKILL.md graph paragraph added in v7.1.0.
   +90.2% over single-agent at ~15x chat tokens (anthropic.com
   2025-06-13) — structure pays only where the task value covers it.
 
-Strict-win conditions — the graph lane is a pure win only when ALL
-hold; each is testable before dispatch:
+Admission guardrails — estimate each before dispatch, validate
+cost/latency/quality after; any that cannot be established with
+confidence means stay turn-by-turn:
 
 1. Edges derivable from the request, not from results. LLMCompiler
    (arXiv:2312.04511): 1.8-3.7x faster, 3.4-6.7x cheaper, quality
    flat-to-up — only where the DAG is query-derivable; its authors
    concede a single static graph "is not feasible" when dependencies
-   emerge at runtime (replan per iteration instead).
-2. Low coupling. >~50% of nodes needing another node's output/files
-   → parallel LOSES 29-39% wall-clock AND ~8% code quality
-   (CodeCRDT, arXiv:2510.18893, 600 runs, p<0.001).
+   emerge at runtime. If returned evidence invalidates an edge, stop
+   the affected chains and replan explicitly.
+2. Low coupling — a warning sign, not a validated cutoff: in
+   CodeCRDT's six small UI tasks (arXiv:2510.18893, 600 runs),
+   high-coupling cases ran 29-39% slower and aggregate LLM-scored
+   code quality fell ~8% (p<0.001) — attribution confounded by
+   parallel runs producing 82-189% more code. Treat "more than about
+   half the nodes need another node's output or files" as the
+   warning threshold.
 3. Writes partitioned or single-threaded. Cognition 2026-04-22:
    "writes stay single-threaded and the additional agents contribute
    intelligence rather than actions." Bun's Zig→Rust port ran
    64-wide only via 4 isolated worktrees + a ban on all git ops
    except atomic single-file commits (bun.com 2026-07-08).
-4. Machine-checkable verifier at every join. Without one,
-   structuring is pure overhead: RSTD (arXiv:2605.15425) measured
-   3.1x tokens, +71% latency, zero quality gain, and +80.5% retry
-   cost from cascading downstream re-execution.
-5. Granularity 3-5 concurrent, each node a self-contained
-   deliverable. Speedup peaks at N=3 (2.05x), thrashing >N=10 for
-   interdependent work (CodeCRDT); Anthropic converges on 3-5
-   teammates / <15-agent workflows. Over-decomposition is the #1
-   decomposition failure at 36% (arXiv:2606.18051) — merge any node
-   that is a single tool call.
+4. Deterministic contract check at every join — structure and
+   executable invariants; machine checks validate form, not
+   semantics, and where downstream correctness cannot be gated the
+   join stays turn-by-turn. Cautionary data: RSTD (arXiv:2605.15425;
+   two workloads, ten runs, largely simulated failures) measured
+   static decomposition without runtime adaptation at 3.1x tokens,
+   +71% latency, zero quality gain, and +80.5% retry cost from
+   cascading downstream re-execution — value depends on real
+   failure rates.
+5. Granularity: start at 3-5 concurrent, each node a self-contained
+   deliverable, and measure before going wider — CodeCRDT tested at
+   most five agents (speedup peaked at N=3, 2.05x; beyond five its
+   numbers are projections); Anthropic converges on 3-5 teammates /
+   <15-agent workflows. Over-decomposition led decomposition
+   failures in a 50-case skill-routing audit (36%,
+   arXiv:2606.18051) — don't mint a worker for one trivial tool
+   call.
 6. Pipeline, don't barrier. Barriers bind wall-clock to an
    unpredictable straggler (11-64x per-round spread; straggler
    identity varies — Aegean, arXiv:2512.20184; quorum joins cut
    latency 1.2-20x with accuracy within 2.5%). Schedule the critical
    path: LAMaS (arXiv:2601.10560) cut latency 55-76% while raising
    accuracy 0.3-2.0pp.
-7. Hand-drawn only. Automated graph search costs ~10x CoT-SC for
-   negligible-to-negative gain; 7/14 AFlow-generated workflows
-   degenerated to "one prompt 3x" ("Illusion of Multi-Agent
-   Advantage", arXiv:2606.13003). Expert decomposition +
-   deterministic orchestration: 57.0%→96.5% at matched cost.
+7. Hand-author the initial graph; never spend the task's budget on
+   automated topology search. In the Illusion audit's tested
+   configurations (arXiv:2606.13003), search-based frameworks cost
+   ~10x CoT-SC for negligible-to-negative gain and 7/14
+   AFlow-generated workflows degenerated to "one prompt 3x", while
+   expert decomposition + deterministic orchestration hit
+   57.0%→96.5% at matched cost. (LLMCompiler and LAMaS auto-generate
+   graphs with good results in their settings — the rule is about
+   not spending YOUR task budget searching, not a claim that search
+   can never work.)
 
 Discovery-shaped work: the evidence says structure the VERIFICATION,
-not the plan — MAST's winning intervention was a verification cycle,
-not parallelism (25.0%→40.6%, arXiv:2503.13657). Route-by-shape
-stands unchanged.
+not the plan — MAST's winning ChatDev intervention turned a DAG into
+a cyclic review topology with an iteration cap (25.0%→40.6%,
+arXiv:2503.13657). Fixed verification/retry loops with stable
+contracts may be structured even around discovery work; what stays
+adaptive is the plan. Route-by-shape stands unchanged.
 
 Host runtimes (as of 2026-08-27): Claude Code's Workflow tool is the
 deterministic graph runtime — the script holds the plan out of
@@ -193,7 +215,7 @@ gated on the user's explicit opt-in (ultracode or direct ask). Codex
 has no graph runtime — the orchestrator sequences native spawns
 along the drawn edges itself.
 
-Delegation-prompt quality is the measured bottleneck of ANY
-topology: 17.2% average pass rate on writing context-correct
-subagent prompts across 33 models (arXiv:2606.08878). Budget
-orchestrator tokens for node prompts, not just synthesis.
+Delegation-prompt quality is a measured cross-topology risk: 17.2%
+average pass rate on writing context-correct subagent prompts
+across 33 models (arXiv:2606.08878). Budget orchestrator tokens for
+node prompts, not just synthesis.

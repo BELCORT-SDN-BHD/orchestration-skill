@@ -61,20 +61,25 @@ required = (
     "orchestrator-rate tokens",
     "orchestrator and strongest worker are the same model",
     "a graph whose edges you have not drawn",
-    "draw the task graph once, by hand",
-    "never searched for",
+    "fan-out has already earned its place",
+    "draw the task graph by hand",
+    "searching for a topology",
     "join only on what the join needs",
-    "machine-checkable check",
-    "an artifact the harness executes",
-    "Discovery-shaped work never enters a graph",
-    "writes stay single-threaded",
+    "machine-checkable contract",
+    "a check on form, never a substitute",
+    "a new consent or topology class",
+    "every gate on the dispatches",
+    "only under that host's own opt-in",
+    "the runtime only schedules and records",
+    "Discovery-shaped work never enters a precomputed graph",
+    "Parallel writers own disjoint write sets",
 )
 for phrase in required:
     if phrase not in body:
         raise SystemExit(f"SKILL.md missing required principle: {phrase}")
 
-if len(body.split()) > 610:
-    raise SystemExit("orchestrator policy exceeds 610 words")
+if len(body.split()) > 675:
+    raise SystemExit("orchestrator policy exceeds 675 words")
 
 if (skill / "references").exists():
     raise SystemExit("perishable reference material belongs in FIELD-NOTES.md, not references/")
