@@ -34,14 +34,24 @@ exploration, implementation, testing. Most tokens then land at worker rates.
    vendors. The policy names tiers, not models — current model bindings
    are dated observations in `skills/orchestration/FIELD-NOTES.md`, never
    policy.
-3. Worker prompts are self-contained, name the recipient as a worker, and
+3. When a fan-out has already earned its place and both the units and
+   the dependencies between them are derivable from the request before
+   any work runs, the orchestrator hand-draws an explicit task graph
+   (never spending task budget on automated topology search); joins
+   take only the inputs they need and are gated by machine-checkable
+   contracts. A graph is a representation of dispatches, not a new
+   consent class — every gate applies unchanged, and a host's
+   deterministic runtime executes it only under that host's own
+   opt-in. Discovery-shaped work never enters a precomputed graph —
+   it stays turn-by-turn, with structured verification layered on top.
+4. Worker prompts are self-contained, name the recipient as a worker, and
    forbid further delegation — only the top-level session orchestrates,
    so fleets cannot recurse.
-4. Consent gates: a fleet runs only on the user's direct ask, and a
+5. Consent gates: a fleet runs only on the user's direct ask, and a
    task skill that wants the orchestrator itself to do the work must
    state what the orchestrator-rate tokens buy and get explicit
    approval.
-5. The orchestrator reviews worker evidence, resolves gaps, and produces
+6. The orchestrator reviews worker evidence, resolves gaps, and produces
    the final answer.
 
 ## Install
