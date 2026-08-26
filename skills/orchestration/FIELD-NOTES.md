@@ -120,3 +120,80 @@ summarize away nuance silently; that failure never stalls.
 - 事故:Claude Code 的 Agent 工具在省略 `model` 参数时**继承主会话型号**;主会话=Fable 5 → 全天所有 general-purpose worker 静默跑在 Fable 5 上,违反本 skill 的 never-fable 条款。Founder 当场抓出并令:worker 一律 Opus 5。
 - 修法(harness 执行,非仅指令):`~/.claude/settings.json` 新增 PreToolUse hook(matcher=Agent)——`model` 缺省或含 "fable" 一律 deny;`codex:*` 类型豁免(其 agent 定义自带 sonnet)。四例管口测试 + 存储后 round-trip 均验证。
 - 教训与本 skill 的「在调用点核验默认值」条款完全同构:默认值不是中立的,它会继承你最贵的东西。
+
+## 2026-08-27 — Task-graph lane ("graph engineering"): evidence base
+
+Deep-researched 2026-08-27 (two hermetic research workers, ~40
+primary sources). Backs the SKILL.md graph paragraph added in v7.1.0.
+
+- The term is a July-2026 buzzword (ignited by a tongue-in-cheek
+  @steipete tweet 2026-07-18; earliest written use Simmons
+  2026-07-04); the practice is years older (LangGraph, Salesforce
+  Agent Graph 2024). Adopted here in its dominant sense only: the
+  execution topology as an explicit, hand-reviewable artifact —
+  nodes, typed dependency edges, checkpointed state. The
+  knowledge-graph sense (GraphRAG/"context graphs") is a different
+  discipline with opposite cost trade-offs — do not conflate.
+- Viral numbers circulating under this term are fabricated: the
+  "Anthropic Playbook" PDF, "1000x better", "18% accuracy / 85% cost",
+  the "$3.1M Stanford-Anthropic study". Cite only primary sources.
+- Economics gate stands: Anthropic's multi-agent research system won
+  +90.2% over single-agent at ~15x chat tokens (anthropic.com
+  2025-06-13) — structure pays only where the task value covers it.
+
+Strict-win conditions — the graph lane is a pure win only when ALL
+hold; each is testable before dispatch:
+
+1. Edges derivable from the request, not from results. LLMCompiler
+   (arXiv:2312.04511): 1.8-3.7x faster, 3.4-6.7x cheaper, quality
+   flat-to-up — only where the DAG is query-derivable; its authors
+   concede a single static graph "is not feasible" when dependencies
+   emerge at runtime (replan per iteration instead).
+2. Low coupling. >~50% of nodes needing another node's output/files
+   → parallel LOSES 29-39% wall-clock AND ~8% code quality
+   (CodeCRDT, arXiv:2510.18893, 600 runs, p<0.001).
+3. Writes partitioned or single-threaded. Cognition 2026-04-22:
+   "writes stay single-threaded and the additional agents contribute
+   intelligence rather than actions." Bun's Zig→Rust port ran
+   64-wide only via 4 isolated worktrees + a ban on all git ops
+   except atomic single-file commits (bun.com 2026-07-08).
+4. Machine-checkable verifier at every join. Without one,
+   structuring is pure overhead: RSTD (arXiv:2605.15425) measured
+   3.1x tokens, +71% latency, zero quality gain, and +80.5% retry
+   cost from cascading downstream re-execution.
+5. Granularity 3-5 concurrent, each node a self-contained
+   deliverable. Speedup peaks at N=3 (2.05x), thrashing >N=10 for
+   interdependent work (CodeCRDT); Anthropic converges on 3-5
+   teammates / <15-agent workflows. Over-decomposition is the #1
+   decomposition failure at 36% (arXiv:2606.18051) — merge any node
+   that is a single tool call.
+6. Pipeline, don't barrier. Barriers bind wall-clock to an
+   unpredictable straggler (11-64x per-round spread; straggler
+   identity varies — Aegean, arXiv:2512.20184; quorum joins cut
+   latency 1.2-20x with accuracy within 2.5%). Schedule the critical
+   path: LAMaS (arXiv:2601.10560) cut latency 55-76% while raising
+   accuracy 0.3-2.0pp.
+7. Hand-drawn only. Automated graph search costs ~10x CoT-SC for
+   negligible-to-negative gain; 7/14 AFlow-generated workflows
+   degenerated to "one prompt 3x" ("Illusion of Multi-Agent
+   Advantage", arXiv:2606.13003). Expert decomposition +
+   deterministic orchestration: 57.0%→96.5% at matched cost.
+
+Discovery-shaped work: the evidence says structure the VERIFICATION,
+not the plan — MAST's winning intervention was a verification cycle,
+not parallelism (25.0%→40.6%, arXiv:2503.13657). Route-by-shape
+stands unchanged.
+
+Host runtimes (as of 2026-08-27): Claude Code's Workflow tool is the
+deterministic graph runtime — the script holds the plan out of
+orchestrator context; `pipeline()` is the no-barrier primitive;
+`agent()` takes per-worker model AND effort (the only Claude Code
+lane with per-worker effort control); 16 concurrent / 1000 per run;
+gated on the user's explicit opt-in (ultracode or direct ask). Codex
+has no graph runtime — the orchestrator sequences native spawns
+along the drawn edges itself.
+
+Delegation-prompt quality is the measured bottleneck of ANY
+topology: 17.2% average pass rate on writing context-correct
+subagent prompts across 33 models (arXiv:2606.08878). Budget
+orchestrator tokens for node prompts, not just synthesis.

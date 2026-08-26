@@ -60,13 +60,21 @@ required = (
     "repo contents or secrets anywhere the user did not ask",
     "orchestrator-rate tokens",
     "orchestrator and strongest worker are the same model",
+    "a graph whose edges you have not drawn",
+    "draw the task graph once, by hand",
+    "never searched for",
+    "join only on what the join needs",
+    "machine-checkable check",
+    "an artifact the harness executes",
+    "Discovery-shaped work never enters a graph",
+    "writes stay single-threaded",
 )
 for phrase in required:
     if phrase not in body:
         raise SystemExit(f"SKILL.md missing required principle: {phrase}")
 
-if len(body.split()) > 470:
-    raise SystemExit("orchestrator policy exceeds 470 words")
+if len(body.split()) > 610:
+    raise SystemExit("orchestrator policy exceeds 610 words")
 
 if (skill / "references").exists():
     raise SystemExit("perishable reference material belongs in FIELD-NOTES.md, not references/")
@@ -100,7 +108,7 @@ if (root / "CLAUDE.md").read_text(encoding="utf-8").strip() != "@AGENTS.md":
 if "FIELD-NOTES.md" not in readme:
     raise SystemExit("README.md must point at the dated field notes")
 
-if (skill / "VERSION").read_text(encoding="utf-8").strip() != "7.0.0":
-    raise SystemExit("VERSION must be 7.0.0")
+if (skill / "VERSION").read_text(encoding="utf-8").strip() != "7.1.0":
+    raise SystemExit("VERSION must be 7.1.0")
 
 print("SKILL_VALIDATION=pass")
