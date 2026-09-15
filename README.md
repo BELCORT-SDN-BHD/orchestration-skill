@@ -15,6 +15,12 @@ A single policy file (`skills/orchestration/SKILL.md`) linked into both
 hosts. Every session loads it automatically; `/orchestration` (Claude Code)
 or `$orchestration` (Codex) re-applies it on demand.
 
+An optional, model-pinned variant is available at
+`skills/orchestrator-fable/SKILL.md`. It keeps Fable in the orchestrator role
+and explicitly routes bounded work to Claude-native or Codex worker lanes.
+Unlike the universal policy, this variant contains host- and model-specific
+settings and is intended for environments that provide the named lanes.
+
 ## Why
 
 The main model is the most expensive one in the session. It should spend its
